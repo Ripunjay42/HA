@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --color-surface: 255 255 255;
+  --color-surface-muted: 234 244 252;
+  --color-surface-app: 243 250 254;
+  --color-ink: 11 37 64;
+  --color-ink-soft: 92 122 148;
+  --color-ink-faint: 147 175 196;
+  --color-line: 220 234 245;
+}
+
+.dark:root {
+  --color-surface: 22 30 41;
+  --color-surface-muted: 30 40 53;
+  --color-surface-app: 13 18 26;
+  --color-ink: 236 244 251;
+  --color-ink-soft: 154 176 196;
+  --color-ink-faint: 100 122 143;
+  --color-line: 42 54 68;
+}

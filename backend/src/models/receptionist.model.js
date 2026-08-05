@@ -1,0 +1,33 @@
+import { Schema, model } from 'mongoose';
+import bcrypt from 'bcryptjs';
+
+const receptionistSchema = new Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  passwordHash: { type: String, required: true },
+  staffId: { type: String, required: true, unique: true },
+  phone: String,
+  aadhaarNumber: String,
+  panNumber: String,
+  documents: [{
+    type: {
+      type: String,
+      enum: ['aadhaar', 'pan', 'employment_other'],
+    },
+    fileUrl: String,
+    uploadedAt: Date,
+  }],
+  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+}, { timestamps: true });
+
+receptionistSchema.pre('save', async function hashPassword(next) {
+  if (!this.isModified('passwordHash')) return next();
+  this.passwordHash = await bcrypt.hash(this.passwordHash, 10);
+  next();
+});
+
+receptionistSchema.methods.comparePassword = function comparePassword(candidate) {
+  return bcrypt.compare(candidate, this.passwordHash);
+};
+
+export default model('Receptionist', receptionistSchema);
