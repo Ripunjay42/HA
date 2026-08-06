@@ -36,7 +36,7 @@ export default function AppointmentsScreen() {
           <Card className="mb-3">
             <View className="flex-row items-center">
               <View className="mr-3 h-11 w-11 items-center justify-center rounded-full bg-surface-muted">
-                <Ionicons name="person" size={20} color={colors.navy} />
+                <Ionicons name="person" size={20} color={colors.ink} />
               </View>
               <View className="flex-1">
                 <Text className="text-sm font-bold text-ink">

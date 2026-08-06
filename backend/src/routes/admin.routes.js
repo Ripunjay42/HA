@@ -1,9 +1,8 @@
 import express from 'express';
 import {
-  createStaff, listStaff, setStaffStatus, addStaffDocument, getReports,
+  createStaff, listStaff, setStaffStatus, updateStaff, addStaffDocument, getStaffDocument, getReports,
 } from '../controllers/admin.controller.js';
 import { authenticate, authorize } from '../middlewares/auth.js';
-import upload from '../middlewares/upload.js';
 
 const router = express.Router();
 
@@ -13,12 +12,14 @@ router.use(authenticate);
 // patient, so the read-only staff directory is open to them too; every
 // write action below stays admin-only.
 router.get('/staff', authorize('admin', 'receptionist'), listStaff);
+router.get('/staff/:role/:id/documents/:documentId', authorize('admin', 'receptionist'), getStaffDocument);
 
 router.use(authorize('admin'));
 
 router.post('/staff', createStaff);
+router.patch('/staff/:role/:id', updateStaff);
 router.patch('/staff/:role/:id/status', setStaffStatus);
-router.post('/staff/:role/:id/documents', upload.single('file'), addStaffDocument);
+router.post('/staff/:role/:id/documents', addStaffDocument);
 router.get('/reports', getReports);
 
 export default router;

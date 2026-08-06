@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PatientHomeScreen from '../screens/patient/PatientHomeScreen';
 import AppointmentsScreen from '../screens/patient/AppointmentsScreen';
 import PatientProfileScreen from '../screens/patient/PatientProfileScreen';
@@ -11,6 +12,7 @@ const ICONS = { Home: 'home', Appointments: 'calendar', Profile: 'person' };
 
 export default function PatientTabs() {
   const { colors } = useThemeColors();
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -19,8 +21,11 @@ export default function PatientTabs() {
         tabBarInactiveTintColor: colors.inkFaint,
         tabBarLabelStyle: { fontFamily: 'Ubuntu_500Medium', fontSize: 11 },
         tabBarStyle: {
-          height: 64,
-          paddingBottom: 10,
+          // Fixed height + padding used to sit under gesture-nav/button-nav
+          // system bars on devices without hardware nav buttons -- pad by
+          // the actual bottom inset instead of a guessed constant.
+          height: 56 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 10),
           paddingTop: 8,
           backgroundColor: colors.surface,
           borderTopColor: colors.line,

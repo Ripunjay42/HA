@@ -21,13 +21,15 @@ export const loginStaff = async ({ role, email, password }) => {
   return { token, user: safeUser };
 };
 
-// Patients aren't given a password at registration (per spec), so they
-// authenticate with the two identifiers only they and the hospital know:
-// their phone number and the MR No issued to them at registration.
-export const loginPatient = async ({ phone, mrNo }) => {
-  const patient = await Patient.findOne({ phone, mrNo });
-  if (!patient) throw new ApiError(401, 'Invalid phone number or MR No');
+export const loginPatient = async ({ phone, password }) => {
+  const patient = await Patient.findOne({ phone });
+  if (!patient) throw new ApiError(401, 'Invalid phone number or password');
+
+  const isMatch = await patient.comparePassword(password);
+  if (!isMatch) throw new ApiError(401, 'Invalid phone number or password');
 
   const token = signToken({ id: patient._id, role: 'patient' });
-  return { token, user: patient };
+  const { passwordHash, ...safePatient } = patient.toObject();
+
+  return { token, user: safePatient };
 };

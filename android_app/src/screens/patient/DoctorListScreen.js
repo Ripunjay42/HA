@@ -67,7 +67,7 @@ export default function DoctorListScreen({ navigation, route }) {
           renderItem={({ item }) => (
             <Card className="mb-3 flex-row items-center">
               <View className="mr-4 h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
-                <Ionicons name="person" size={26} color={colors.navy} />
+                <Ionicons name="person" size={26} color={colors.ink} />
               </View>
               <View className="flex-1">
                 <Text className="text-base font-bold text-ink">{item.name}</Text>

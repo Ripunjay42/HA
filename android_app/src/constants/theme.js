@@ -14,12 +14,12 @@ const ACCENTS = {
 export const lightColors = {
   ...ACCENTS,
   surface: '#FFFFFF',
-  surfaceMuted: '#EAF4FC',
-  surfaceApp: '#F3FAFE',
+  surfaceMuted: '#F5F6F8',
+  surfaceApp: '#FFFFFF',
   ink: '#0B2540',
   inkSoft: '#5C7A94',
   inkFaint: '#93AFC4',
-  line: '#DCEAF5',
+  line: '#E6E8EC',
 };
 
 export const darkColors = {
@@ -39,8 +39,11 @@ export const buildGradients = (colors) => ({
   card: [colors.navy, '#164876'],
 });
 
-export const buildCardShadow = (colors) => ({
-  shadowColor: colors.ink,
+// Shadows should always look like a dark drop-shadow, in both themes --
+// tying shadowColor to the theme's text color would turn it into a pale
+// glow in dark mode, since ink is near-white there.
+export const buildCardShadow = () => ({
+  shadowColor: '#000000',
   shadowOffset: { width: 0, height: 8 },
   shadowOpacity: 0.08,
   shadowRadius: 16,

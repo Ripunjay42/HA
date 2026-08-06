@@ -25,12 +25,18 @@ export const getMe = asyncHandler(async (req, res) => {
 });
 
 export const list = asyncHandler(async (req, res) => {
-  const patients = await patientService.listPatients();
+  const filters = req.user.role === 'nurse' ? { assignedNurse: req.user.id } : {};
+  const patients = await patientService.listPatients(filters);
   res.status(200).json({ status: 'ok', patients });
 });
 
 export const assignNurse = asyncHandler(async (req, res) => {
   const patient = await patientService.assignNurse(req.params.mrNo, req.body.staffId);
+  res.status(200).json({ status: 'ok', patient });
+});
+
+export const unassignNurse = asyncHandler(async (req, res) => {
+  const patient = await patientService.unassignNurse(req.params.mrNo);
   res.status(200).json({ status: 'ok', patient });
 });
 

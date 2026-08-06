@@ -1,46 +1,42 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../../components/Card';
-import PickerInput from '../../components/PickerInput';
+import Input from '../../components/Input';
 import GradientButton from '../../components/GradientButton';
 import StatusBadge from '../../components/StatusBadge';
 import ThemeToggle from '../../components/ThemeToggle';
 import { useAuth } from '../../hooks/AuthContext';
 import api from '../../utils/apiClient';
-import { patientOptions } from '../../utils/pickerOptions';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 export default function NurseHomeScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { colors, patientStatusColor } = useThemeColors();
-  const [mrNo, setMrNo] = useState('');
+  const [query, setQuery] = useState('');
   const [patients, setPatients] = useState([]);
-  const [patient, setPatient] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    api.get('/patients').then((res) => setPatients(res.patients)).catch(() => {});
+  const load = useCallback(() => {
+    setLoading(true);
+    api.get('/patients')
+      .then((res) => setPatients(res.patients))
+      .catch((err) => setError(err.message || 'Unable to load patients'))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleSearch = async (mrNoToUse = mrNo) => {
-    setError('');
-    setPatient(null);
-    if (!mrNoToUse) return;
-    setLoading(true);
-    try {
-      const { patient: found } = await api.get(`/patients/mr/${mrNoToUse.trim()}`);
-      setPatient(found);
-    } catch (err) {
-      setError(err.message || 'Patient not found');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const canRecordVitals = patient && String(patient.assignedNurse) === String(user?._id || '');
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return patients;
+    return patients.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.mrNo.toLowerCase().includes(q) || p.phone.includes(q),
+    );
+  }, [query, patients]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-app" edges={['top']}>
@@ -57,59 +53,63 @@ export default function NurseHomeScreen({ navigation }) {
         </View>
       </View>
 
-      <ScrollView className="px-5 pt-5">
-        <PickerInput
-          label="Look up patient by MR No"
-          value={mrNo}
-          onChangeText={setMrNo}
-          placeholder="e.g. MR2608054202"
-          options={patientOptions(patients)}
-          onSelect={(option) => {
-            setMrNo(option.id);
-            handleSearch(option.id);
-          }}
+      <View className="px-5 pt-5">
+        <Input
+          placeholder="Search your patients by name, MR No, or phone"
+          value={query}
+          onChangeText={setQuery}
         />
-        <GradientButton title="Search" onPress={() => handleSearch()} loading={loading} style={{ marginTop: 4, marginBottom: 20 }} />
+        <Text className="-mt-2 mb-2 text-xs text-ink-soft">
+          {filtered.length} patient{filtered.length === 1 ? '' : 's'} assigned to you
+        </Text>
+        {error ? <Text className="mb-2 text-sm text-status-danger">{error}</Text> : null}
+      </View>
 
-        {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
-
-        {patient && (
-          <Card>
-            <Text className="text-lg font-bold text-ink">{patient.name}</Text>
+      <FlatList
+        className="flex-1 px-5"
+        data={filtered}
+        keyExtractor={(item) => item._id}
+        refreshing={loading}
+        onRefresh={load}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        ListEmptyComponent={
+          !loading ? (
+            <View className="mt-10 items-center">
+              <Ionicons name="people-outline" size={32} color={colors.inkFaint} />
+              <Text className="mt-2 text-sm text-ink-soft">
+                {patients.length === 0 ? 'No patients assigned to you yet.' : 'No matches found.'}
+              </Text>
+            </View>
+          ) : null
+        }
+        renderItem={({ item }) => (
+          <Card className="mb-3">
+            <Text className="text-lg font-bold text-ink">{item.name}</Text>
             <Text className="text-xs text-ink-soft">
-              {patient.age} yrs • {patient.gender} • {patient.phone}
+              {item.age} yrs • {item.gender} • {item.phone}
             </Text>
+            <Text className="mt-1 text-xs text-ink-soft">MR No: {item.mrNo}</Text>
             <View className="mt-3 self-start">
-              <StatusBadge status={patient.status} color={patientStatusColor[patient.status]} />
+              <StatusBadge status={item.status} color={patientStatusColor[item.status]} />
             </View>
 
-            {patient.vitals?.recordedAt && (
+            {item.vitals?.recordedAt ? (
               <View className="mt-4 rounded-2xl bg-surface-muted p-3">
                 <Text className="text-xs font-semibold text-ink-soft">Vitals already recorded</Text>
                 <Text className="mt-1 text-xs text-ink-soft">
-                  BP {patient.vitals.bp} • Temp {patient.vitals.temperature} • Pulse {patient.vitals.pulse}
+                  BP {item.vitals.bp} • Temp {item.vitals.temperature} • Pulse {item.vitals.pulse}
                 </Text>
               </View>
+            ) : (
+              <GradientButton
+                title="Record Vitals"
+                onPress={() => navigation.navigate('PatientVitals', { mrNo: item.mrNo })}
+                style={{ marginTop: 16, height: 44 }}
+              />
             )}
-
-            <View className="mt-4">
-              {canRecordVitals && !patient.vitals?.recordedAt ? (
-                <GradientButton
-                  title="Record Vitals"
-                  onPress={() => navigation.navigate('PatientVitals', { mrNo: patient.mrNo })}
-                />
-              ) : !canRecordVitals ? (
-                <View className="flex-row items-center rounded-2xl bg-status-warning/10 p-3">
-                  <Ionicons name="alert-circle" size={16} color={colors.warning} />
-                  <Text className="ml-2 flex-1 text-xs text-ink-soft">
-                    This patient is not assigned to you.
-                  </Text>
-                </View>
-              ) : null}
-            </View>
           </Card>
         )}
-      </ScrollView>
+      />
     </SafeAreaView>
   );
 }

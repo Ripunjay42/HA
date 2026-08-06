@@ -1,6 +1,5 @@
 import { Dimensions, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useThemeColors } from '../../hooks/useThemeColors';
@@ -13,31 +12,41 @@ const CARDS = [
 ];
 
 export default function RoleSelectScreen({ navigation }) {
-  const { gradients } = useThemeColors();
+  const { colors } = useThemeColors();
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
       <ScreenHeader title="Continue As" onBack={() => navigation.goBack()} />
       <View className="flex-1 items-center justify-center px-6">
         <View className="flex-row" style={{ gap: 20 }}>
           {CARDS.map((card) => (
-            <Pressable key={card.key} onPress={() => card.onPress(navigation)}>
-              <LinearGradient
-                colors={gradients.hero}
+            <Pressable
+              key={card.key}
+              onPress={() => card.onPress(navigation)}
+              style={{
+                width: CARD_SIZE,
+                height: CARD_SIZE,
+                borderRadius: 28,
+                borderWidth: 1,
+                borderColor: colors.line,
+                backgroundColor: colors.surface,
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 16,
+              }}
+            >
+              <View
                 style={{
-                  width: CARD_SIZE,
-                  height: CARD_SIZE,
-                  borderRadius: 28,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 16,
+                  marginBottom: 16, height: 56, width: 56, borderRadius: 28,
+                  alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: colors.surfaceMuted,
                 }}
               >
-                <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-white/10">
-                  <Ionicons name={card.icon} size={28} color="#5FD8E8" />
-                </View>
-                <Text className="text-lg font-bold text-white">{card.label}</Text>
-                <Text className="mt-1 text-center text-xs text-white/70">{card.desc}</Text>
-              </LinearGradient>
+                <Ionicons name={card.icon} size={28} color={colors.teal} />
+              </View>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.ink }}>{card.label}</Text>
+              <Text style={{ marginTop: 4, fontSize: 12, textAlign: 'center', color: colors.inkSoft }}>
+                {card.desc}
+              </Text>
             </Pressable>
           ))}
         </View>

@@ -77,7 +77,7 @@ export default function PatientHomeScreen({ navigation }) {
           <View className="flex-row items-center" style={{ gap: 8 }}>
             <ThemeToggle />
             <Pressable className="h-11 w-11 items-center justify-center rounded-full bg-surface-muted">
-              <Ionicons name="notifications-outline" size={20} color={colors.navy} />
+              <Ionicons name="notifications-outline" size={20} color={colors.ink} />
             </Pressable>
           </View>
         </View>
@@ -138,7 +138,7 @@ export default function PatientHomeScreen({ navigation }) {
             </View>
             <Card className="flex-row items-center">
               <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
-                <Ionicons name="person" size={22} color={colors.navy} />
+                <Ionicons name="person" size={22} color={colors.ink} />
               </View>
               <View className="flex-1">
                 <Text className="text-sm font-bold text-ink">

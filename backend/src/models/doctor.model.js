@@ -18,7 +18,9 @@ const doctorSchema = new Schema({
       type: String,
       enum: ['aadhaar', 'pan', 'employment_other'],
     },
-    fileUrl: String,
+    fileName: String,
+    contentType: String,
+    data: Buffer,
     uploadedAt: Date,
   }],
   availability: [{

@@ -6,10 +6,10 @@ import { matchDepartmentBySymptoms } from '../utils/matchDepartment.js';
 import ApiError from '../utils/ApiError.js';
 
 const POPULATE_FIELDS = [
-  { path: 'patientId' },
+  { path: 'patientId', select: '-passwordHash' },
   { path: 'matchedDepartment' },
-  { path: 'matchedDoctors', select: '-passwordHash' },
-  { path: 'selectedDoctor', select: '-passwordHash' },
+  { path: 'matchedDoctors', select: '-passwordHash -documents.data' },
+  { path: 'selectedDoctor', select: '-passwordHash -documents.data' },
 ];
 
 const getAppointmentOr404 = async (id) => {

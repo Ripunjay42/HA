@@ -4,12 +4,12 @@
 
 :root {
   --color-surface: 255 255 255;
-  --color-surface-muted: 234 244 252;
-  --color-surface-app: 243 250 254;
+  --color-surface-muted: 245 246 248;
+  --color-surface-app: 255 255 255;
   --color-ink: 11 37 64;
   --color-ink-soft: 92 122 148;
   --color-ink-faint: 147 175 196;
-  --color-line: 220 234 245;
+  --color-line: 230 232 236;
 }
 
 .dark:root {

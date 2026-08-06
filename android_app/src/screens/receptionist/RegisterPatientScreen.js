@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../../components/ScreenHeader';
 import AnimatedFormHero from '../../components/AnimatedFormHero';
@@ -10,7 +11,7 @@ import Chip from '../../components/Chip';
 import Card from '../../components/Card';
 import GradientButton from '../../components/GradientButton';
 import api from '../../utils/apiClient';
-import { staffOptions } from '../../utils/pickerOptions';
+import { companyOptions, staffOptions } from '../../utils/pickerOptions';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 const GENDERS = ['male', 'female', 'other'];
@@ -18,8 +19,9 @@ const GENDERS = ['male', 'female', 'other'];
 export default function RegisterPatientScreen({ navigation }) {
   const { colors } = useThemeColors();
   const [form, setForm] = useState({
-    name: '', age: '', gender: 'male', phone: '', address: '', guardianName: '', employerName: '',
+    name: '', age: '', gender: 'male', phone: '', password: '', address: '', guardianName: '', employerName: '',
   });
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [registered, setRegistered] = useState(null);
@@ -32,14 +34,15 @@ export default function RegisterPatientScreen({ navigation }) {
 
   useEffect(() => {
     api.get('/admin/staff?role=nurse&status=active').then((res) => setNurses(res.staff)).catch(() => {});
+    api.get('/companies').then((res) => setCompanies(res.companies)).catch(() => {});
   }, []);
 
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
 
   const handleRegister = async () => {
     setError('');
-    if (!form.name || !form.age || !form.phone) {
-      setError('Name, age, and phone are required');
+    if (!form.name || !form.age || !form.phone || !form.password) {
+      setError('Name, age, phone, and password are required');
       return;
     }
     setLoading(true);
@@ -74,7 +77,7 @@ export default function RegisterPatientScreen({ navigation }) {
           <Card className="mb-6 items-center">
             <Ionicons name="checkmark-circle" size={40} color={colors.success} />
             <Text className="mt-2 text-xs font-semibold uppercase tracking-wide text-ink-soft">MR No</Text>
-            <Text className="mt-1 text-2xl font-extrabold text-brand-navy">{registered.mrNo}</Text>
+            <Text className="mt-1 text-2xl font-extrabold text-brand-teal">{registered.mrNo}</Text>
             <Text className="mt-1 text-xs text-ink-soft">
               {registered.paymentCategory === 'non_payment' ? 'Company Covered' : 'Self-Pay'}
             </Text>
@@ -92,6 +95,7 @@ export default function RegisterPatientScreen({ navigation }) {
                 value={staffId}
                 onChangeText={setStaffId}
                 placeholder="e.g. NR00001"
+                icon="medkit-outline"
                 options={staffOptions(nurses)}
                 onSelect={(option) => setStaffId(option.id)}
               />
@@ -114,33 +118,52 @@ export default function RegisterPatientScreen({ navigation }) {
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
       <ScreenHeader title="Register Patient" onBack={() => navigation.goBack()} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView className="px-6 pt-2" keyboardShouldPersistTaps="handled">
-          <AnimatedFormHero
-            icon="person-add"
-            title="New Patient Registration"
-            subtitle="Enter the walk-in patient's details to generate their MR No."
-          />
-          <Input label="Full Name" value={form.name} onChangeText={set('name')} placeholder="Jane Doe" />
-          <Input label="Age" value={form.age} onChangeText={set('age')} keyboardType="number-pad" placeholder="30" />
+      <KeyboardAwareScrollView
+        className="px-6 pt-2"
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={40}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        <AnimatedFormHero
+          icon="person-add"
+          title="New Patient Registration"
+          subtitle="Enter the walk-in patient's details to generate their MR No."
+        />
+        <Input label="Full Name" value={form.name} onChangeText={set('name')} placeholder="Jane Doe" />
+        <Input label="Age" value={form.age} onChangeText={set('age')} keyboardType="number-pad" placeholder="30" />
 
-          <Text className="mb-2 text-sm font-medium text-ink-soft">Gender</Text>
-          <View className="mb-4 flex-row">
-            {GENDERS.map((g) => (
-              <Chip key={g} label={g[0].toUpperCase() + g.slice(1)} selected={form.gender === g} onPress={() => set('gender')(g)} />
-            ))}
-          </View>
+        <Text className="mb-2 text-sm font-medium text-ink-soft">Gender</Text>
+        <View className="mb-4 flex-row">
+          {GENDERS.map((g) => (
+            <Chip key={g} label={g[0].toUpperCase() + g.slice(1)} selected={form.gender === g} onPress={() => set('gender')(g)} />
+          ))}
+        </View>
 
-          <Input label="Phone Number" value={form.phone} onChangeText={set('phone')} keyboardType="phone-pad" />
-          <Input label="Address" value={form.address} onChangeText={set('address')} />
-          <Input label="Guardian / Emergency Contact" value={form.guardianName} onChangeText={set('guardianName')} />
-          <Input label="Employer Name (optional)" value={form.employerName} onChangeText={set('employerName')} />
+        <Input label="Phone Number" value={form.phone} onChangeText={set('phone')} keyboardType="phone-pad" />
+        <Input
+          label="Password"
+          value={form.password}
+          onChangeText={set('password')}
+          secureTextEntry
+          placeholder="Set a password for the patient"
+        />
+        <Input label="Address" value={form.address} onChangeText={set('address')} />
+        <Input label="Guardian / Emergency Contact" value={form.guardianName} onChangeText={set('guardianName')} />
+        <PickerInput
+          label="Employer Name (optional)"
+          value={form.employerName}
+          onChangeText={set('employerName')}
+          placeholder="Leave blank if not applicable"
+          icon="business-outline"
+          options={companyOptions(companies)}
+          onSelect={(option) => set('employerName')(option.id)}
+          clearable
+        />
 
-          {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
+        {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
 
-          <GradientButton title="Register" onPress={handleRegister} loading={loading} style={{ marginBottom: 32 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <GradientButton title="Register" onPress={handleRegister} loading={loading} style={{ marginBottom: 32 }} />
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-  registerSelf, registerByReceptionist, getByMrNo, getMe, list, assignNurse, recordVitals,
+  registerSelf, registerByReceptionist, getByMrNo, getMe, list, assignNurse, unassignNurse, recordVitals,
 } from '../controllers/patient.controller.js';
 import { authenticate, authorize } from '../middlewares/auth.js';
 
@@ -28,6 +28,13 @@ router.patch(
   authenticate,
   authorize('admin', 'receptionist'),
   assignNurse,
+);
+
+router.patch(
+  '/mr/:mrNo/unassign-nurse',
+  authenticate,
+  authorize('admin', 'receptionist'),
+  unassignNurse,
 );
 
 router.patch('/mr/:mrNo/vitals', authenticate, authorize('nurse'), recordVitals);

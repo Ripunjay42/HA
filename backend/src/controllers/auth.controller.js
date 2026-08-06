@@ -8,7 +8,7 @@ export const staffLogin = asyncHandler(async (req, res) => {
 });
 
 export const patientLogin = asyncHandler(async (req, res) => {
-  const { phone, mrNo } = req.body;
-  const result = await authService.loginPatient({ phone, mrNo });
+  const { phone, password } = req.body;
+  const result = await authService.loginPatient({ phone, password });
   res.status(200).json({ status: 'ok', ...result });
 });

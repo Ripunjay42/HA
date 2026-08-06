@@ -13,6 +13,13 @@ const getModelOrThrow = (role) => {
   return Model;
 };
 
+// Document bytes are only needed when actually downloading a document, so
+// every other staff response strips `data` and keeps just the metadata.
+const stripDocumentData = (doc) => {
+  const { data, ...rest } = doc;
+  return rest;
+};
+
 export const createStaff = async (role, data) => {
   const Model = getModelOrThrow(role);
   const { password, ...rest } = data;
@@ -30,7 +37,9 @@ export const createStaff = async (role, data) => {
 
 export const listStaff = async (role, filters = {}) => {
   const Model = getModelOrThrow(role);
-  return Model.find(filters).select('-passwordHash');
+  const query = Model.find(filters).select('-passwordHash -documents.data');
+  if (role === 'doctor') query.populate('departmentId', 'name');
+  return query;
 };
 
 export const setStaffStatus = async (role, id, status) => {
@@ -47,8 +56,33 @@ export const addStaffDocument = async (role, id, document) => {
 
   staff.documents.push({ ...document, uploadedAt: new Date() });
   await staff.save();
-  const { passwordHash, ...safeStaff } = staff.toObject();
-  return safeStaff;
+  const { passwordHash, documents, ...safeStaff } = staff.toObject();
+  return { ...safeStaff, documents: documents.map(stripDocumentData) };
+};
+
+export const getStaffDocument = async (role, id, documentId) => {
+  const Model = getModelOrThrow(role);
+  const staff = await Model.findById(id).select('documents');
+  if (!staff) throw new ApiError(404, 'Staff member not found');
+
+  const document = staff.documents.id(documentId);
+  if (!document) throw new ApiError(404, 'Document not found');
+  return document;
+};
+
+export const updateStaff = async (role, id, data) => {
+  const Model = getModelOrThrow(role);
+  const { password, documents, ...rest } = data;
+
+  const staff = await Model.findById(id);
+  if (!staff) throw new ApiError(404, 'Staff member not found');
+
+  Object.assign(staff, rest);
+  if (password) staff.passwordHash = password;
+
+  await staff.save();
+  const { passwordHash, documents: docs, ...safeStaff } = staff.toObject();
+  return { ...safeStaff, documents: docs.map(stripDocumentData) };
 };
 
 export const getReports = async () => {

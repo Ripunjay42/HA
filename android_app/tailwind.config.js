@@ -5,6 +5,10 @@ module.exports = {
     "./App.{js,jsx,ts,tsx}",
     "./src/**/*.{js,jsx,ts,tsx}"
   ],
+  // Required for nativewind's colorScheme.set() manual override (used by
+  // our theme toggle) -- without this, NativeWind defaults to "media" mode,
+  // which only follows the OS setting and throws if you try to override it.
+  darkMode: "class",
   presets: [require("nativewind/preset")],
   theme: {
     extend: {

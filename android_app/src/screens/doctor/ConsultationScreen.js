@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import ScreenHeader from '../../components/ScreenHeader';
 import AnimatedFormHero from '../../components/AnimatedFormHero';
 import Card from '../../components/Card';
@@ -50,7 +51,13 @@ export default function ConsultationScreen({ navigation, route }) {
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
       <ScreenHeader title="Consultation" onBack={() => navigation.goBack()} />
-      <ScrollView className="px-5" showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        className="px-5"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={40}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         <AnimatedFormHero
           icon="medkit"
           title="Patient Consultation"
@@ -105,7 +112,7 @@ export default function ConsultationScreen({ navigation, route }) {
             </>
           )}
         </Card>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

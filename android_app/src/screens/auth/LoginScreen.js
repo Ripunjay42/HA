@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import ScreenHeader from '../../components/ScreenHeader';
 import Input from '../../components/Input';
 import GradientButton from '../../components/GradientButton';
 import { useAuth } from '../../hooks/AuthContext';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 const ROLE_TITLES = {
   patient: 'Patient Sign In',
@@ -17,9 +19,9 @@ const ROLE_TITLES = {
 export default function LoginScreen({ route, navigation }) {
   const { role } = route.params;
   const { staffLogin, patientLogin } = useAuth();
+  const { colors } = useThemeColors();
 
   const [phone, setPhone] = useState('');
-  const [mrNo, setMrNo] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,7 @@ export default function LoginScreen({ route, navigation }) {
     setLoading(true);
     try {
       if (isPatient) {
-        await patientLogin({ phone, mrNo });
+        await patientLogin({ phone, password });
       } else {
         await staffLogin({ role, email, password });
       }
@@ -46,62 +48,65 @@ export default function LoginScreen({ route, navigation }) {
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
       <ScreenHeader title={ROLE_TITLES[role] || 'Sign In'} onBack={() => navigation.goBack()} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView className="px-6 pt-4" keyboardShouldPersistTaps="handled">
-          {isPatient ? (
-            <>
-              <Input
-                label="Phone Number"
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                placeholder="10-digit phone number"
-              />
-              <Input
-                label="MR No"
-                value={mrNo}
-                onChangeText={setMrNo}
-                autoCapitalize="characters"
-                placeholder="e.g. MR2608054202"
-              />
-            </>
-          ) : (
-            <>
-              <Input
-                label="Email"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                placeholder="you@has.local"
-              />
-              <Input
-                label="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                placeholder="••••••••"
-              />
-            </>
-          )}
+      <KeyboardAwareScrollView
+        className="px-6 pt-4"
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={40}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {isPatient ? (
+          <>
+            <Input
+              label="Phone Number"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholder="10-digit phone number"
+            />
+            <Input
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholder="••••••••"
+            />
+          </>
+        ) : (
+          <>
+            <Input
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="you@has.local"
+            />
+            <Input
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholder="••••••••"
+            />
+          </>
+        )}
 
-          {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
+        {error ? <Text style={{ marginBottom: 16, fontSize: 14, color: colors.danger }}>{error}</Text> : null}
 
-          <GradientButton title="Sign In" onPress={handleSubmit} loading={loading} />
+        <GradientButton title="Sign In" onPress={handleSubmit} loading={loading} />
 
-          {isPatient && (
-            <Text className="mt-6 text-center text-sm text-ink-soft">
-              New patient?{' '}
-              <Text
-                className="font-semibold text-brand-teal"
-                onPress={() => navigation.navigate('PatientRegister')}
-              >
-                Register here
-              </Text>
+        {isPatient && (
+          <Text style={{ marginTop: 24, textAlign: 'center', fontSize: 14, color: colors.inkSoft }}>
+            New patient?{' '}
+            <Text
+              style={{ fontWeight: '600', color: colors.teal }}
+              onPress={() => navigation.navigate('PatientRegister')}
+            >
+              Register here
             </Text>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </Text>
+        )}
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

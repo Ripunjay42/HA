@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const patientSchema = new Schema({
   mrNo: { type: String, required: true, unique: true },
@@ -8,6 +9,7 @@ const patientSchema = new Schema({
   age: Number,
   gender: { type: String, enum: ['male', 'female', 'other'] },
   phone: { type: String, required: true },
+  passwordHash: { type: String, required: true },
   address: String,
   guardianName: String,
   registrationSource: {
@@ -43,5 +45,15 @@ const patientSchema = new Schema({
     default: 'registered',
   },
 }, { timestamps: true });
+
+patientSchema.pre('save', async function hashPassword(next) {
+  if (!this.isModified('passwordHash')) return next();
+  this.passwordHash = await bcrypt.hash(this.passwordHash, 10);
+  next();
+});
+
+patientSchema.methods.comparePassword = function comparePassword(candidate) {
+  return bcrypt.compare(candidate, this.passwordHash);
+};
 
 export default model('Patient', patientSchema);

@@ -3,24 +3,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/ThemeContext';
 import { useThemeColors } from '../hooks/useThemeColors';
 
-// Cycles system -> light -> dark -> system. Icon reflects the resolved
-// (actually applied) scheme; system mode is indicated by the outline icon.
+// A plain light/dark flip: every tap switches to the opposite of whatever
+// is currently showing. Starts from the system setting on first launch, but
+// once tapped it's a predictable binary switch -- no three-way "system"
+// step in between, which was confusing (a tap from an already-dark system
+// state used to jump to explicitly-pinned light, looking like a bug).
 export default function ThemeToggle({ style, className, iconColor }) {
-  const { preference, resolvedScheme, setThemePreference } = useTheme();
+  const { resolvedScheme, setThemePreference } = useTheme();
   const { colors } = useThemeColors();
 
-  const next = { system: 'light', light: 'dark', dark: 'system' }[preference];
-  const icon = preference === 'system'
-    ? 'contrast-outline'
-    : resolvedScheme === 'dark' ? 'moon' : 'sunny';
+  const isDark = resolvedScheme === 'dark';
 
   return (
     <Pressable
-      onPress={() => setThemePreference(next)}
+      onPress={() => setThemePreference(isDark ? 'light' : 'dark')}
       className={className || 'h-10 w-10 items-center justify-center rounded-full bg-surface-muted'}
       style={style}
     >
-      <Ionicons name={icon} size={18} color={iconColor || colors.teal} />
+      <Ionicons name={isDark ? 'moon' : 'sunny'} size={18} color={iconColor || colors.teal} />
     </Pressable>
   );
 }

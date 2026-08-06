@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../../components/ScreenHeader';
 import AnimatedFormHero from '../../components/AnimatedFormHero';
@@ -61,7 +62,12 @@ export default function AssignNurseScreen({ navigation }) {
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
       <ScreenHeader title="Assign Nurse" onBack={() => navigation.goBack()} />
-      <ScrollView className="px-6 pt-2" keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView
+        className="px-6 pt-2"
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={40}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         <AnimatedFormHero
           icon="people"
           title="Assign Nurse to Patient"
@@ -71,6 +77,7 @@ export default function AssignNurseScreen({ navigation }) {
           label="Patient MR No"
           value={mrNo}
           onChangeText={setMrNo}
+          icon="person-outline"
           options={patientOptions(patients)}
           onSelect={(option) => {
             setMrNo(option.id);
@@ -98,6 +105,7 @@ export default function AssignNurseScreen({ navigation }) {
                   value={staffId}
                   onChangeText={setStaffId}
                   placeholder="e.g. NR00001"
+                  icon="medkit-outline"
                   options={staffOptions(nurses)}
                   onSelect={(option) => setStaffId(option.id)}
                 />
@@ -106,7 +114,7 @@ export default function AssignNurseScreen({ navigation }) {
             )}
           </Card>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

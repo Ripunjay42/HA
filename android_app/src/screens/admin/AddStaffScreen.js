@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../../components/ScreenHeader';
 import Input from '../../components/Input';
+import TimeFieldInput from '../../components/TimeFieldInput';
+import DocumentPickerField from '../../components/DocumentPickerField';
 import Chip from '../../components/Chip';
 import Card from '../../components/Card';
 import GradientButton from '../../components/GradientButton';
@@ -14,22 +17,37 @@ const ROLES = ['doctor', 'nurse', 'receptionist'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const SHIFTS = ['morning', 'evening', 'night'];
 
-export default function AddStaffScreen({ navigation }) {
+const flattenAvailability = (availability = []) =>
+  availability.flatMap(({ day, slots }) => slots.map((slot) => ({ day, startTime: slot.startTime, endTime: slot.endTime })));
+
+export default function AddStaffScreen({ navigation, route }) {
   const { colors } = useThemeColors();
-  const [role, setRole] = useState('doctor');
+  const editing = route?.params?.staff || null;
+  const isEditMode = !!editing;
+
+  const [role, setRole] = useState(editing?.role || 'doctor');
   const [departments, setDepartments] = useState([]);
-  const [common, setCommon] = useState({ name: '', email: '', password: '', phone: '' });
+  const [common, setCommon] = useState({
+    name: editing?.name || '',
+    email: editing?.email || '',
+    password: '',
+    phone: editing?.phone || '',
+  });
 
-  const [departmentId, setDepartmentId] = useState(null);
-  const [specialization, setSpecialization] = useState('');
-  const [consultationFee, setConsultationFee] = useState('');
+  const [departmentId, setDepartmentId] = useState(editing?.departmentId?._id || editing?.departmentId || null);
+  const [specialization, setSpecialization] = useState(editing?.specialization || '');
+  const [qualifications, setQualifications] = useState(editing?.qualifications || '');
+  const [experienceYears, setExperienceYears] = useState(editing?.experienceYears ? String(editing.experienceYears) : '');
+  const [consultationFee, setConsultationFee] = useState(editing?.consultationFee ? String(editing.consultationFee) : '');
   const [slotDay, setSlotDay] = useState('Mon');
-  const [slotStart, setSlotStart] = useState('');
-  const [slotEnd, setSlotEnd] = useState('');
-  const [slots, setSlots] = useState([]);
+  const [slotStart, setSlotStart] = useState('09:00');
+  const [slotEnd, setSlotEnd] = useState('09:30');
+  const [slots, setSlots] = useState(editing ? flattenAvailability(editing.availability) : []);
 
-  const [ward, setWard] = useState('');
-  const [shift, setShift] = useState('morning');
+  const [ward, setWard] = useState(editing?.ward || '');
+  const [shift, setShift] = useState(editing?.shift || 'morning');
+
+  const [documents, setDocuments] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,7 +56,7 @@ export default function AddStaffScreen({ navigation }) {
   useEffect(() => {
     api.get('/departments').then((res) => {
       setDepartments(res.departments);
-      setDepartmentId(res.departments[0]?._id || null);
+      if (!departmentId) setDepartmentId(res.departments[0]?._id || null);
     });
   }, []);
 
@@ -47,8 +65,6 @@ export default function AddStaffScreen({ navigation }) {
   const addSlot = () => {
     if (!slotStart || !slotEnd) return;
     setSlots((s) => [...s, { day: slotDay, startTime: slotStart, endTime: slotEnd }]);
-    setSlotStart('');
-    setSlotEnd('');
   };
 
   const removeSlot = (index) => setSlots((s) => s.filter((_, i) => i !== index));
@@ -62,29 +78,52 @@ export default function AddStaffScreen({ navigation }) {
     return Object.entries(byDay).map(([day, daySlots]) => ({ day, slots: daySlots }));
   };
 
+  const uploadDocuments = async (staffId) => {
+    for (const doc of documents) {
+      await api.post(`/admin/staff/${role}/${staffId}/documents`, doc);
+    }
+  };
+
   const handleSubmit = async () => {
     setError('');
-    if (!common.name || !common.email || !common.password) {
+    if (!common.name || !common.email || (!isEditMode && !common.password)) {
       setError('Name, email, and password are required');
       return;
     }
     setLoading(true);
     try {
-      const payload = { role, ...common };
+      const payload = { ...common };
+      if (!payload.password) delete payload.password;
+
       if (role === 'doctor') {
         Object.assign(payload, {
           departmentId,
           specialization,
+          qualifications,
+          experienceYears: experienceYears ? Number(experienceYears) : undefined,
           consultationFee: Number(consultationFee),
           availability: buildAvailability(),
         });
       } else if (role === 'nurse') {
         Object.assign(payload, { ward, shift });
       }
-      const { staff } = await api.post('/admin/staff', payload);
+
+      let staff;
+      if (isEditMode) {
+        const res = await api.patch(`/admin/staff/${role}/${editing._id}`, payload);
+        staff = res.staff;
+      } else {
+        const res = await api.post('/admin/staff', { role, ...payload });
+        staff = res.staff;
+      }
+
+      if (documents.length > 0) {
+        await uploadDocuments(staff._id);
+      }
+
       setSuccess(staff);
     } catch (err) {
-      setError(err.message || 'Unable to add staff');
+      setError(err.message || `Unable to ${isEditMode ? 'update' : 'add'} staff`);
     } finally {
       setLoading(false);
     }
@@ -94,26 +133,36 @@ export default function AddStaffScreen({ navigation }) {
     setSuccess(null);
     setCommon({ name: '', email: '', password: '', phone: '' });
     setSpecialization('');
+    setQualifications('');
+    setExperienceYears('');
     setConsultationFee('');
     setSlots([]);
     setWard('');
+    setDocuments([]);
   };
 
   if (success) {
     return (
       <SafeAreaView className="flex-1 bg-surface-app">
-        <ScreenHeader title="Staff Added" onBack={() => navigation.goBack()} />
+        <ScreenHeader title={isEditMode ? 'Staff Updated' : 'Staff Added'} onBack={() => navigation.goBack()} />
         <View className="flex-1 px-6 pt-4">
           <Card className="items-center">
             <Ionicons name="checkmark-circle" size={40} color={colors.success} />
             <Text className="mt-2 text-lg font-bold text-ink">{success.name}</Text>
             <Text className="text-xs text-ink-soft">{success.email}</Text>
             {success.staffId ? (
-              <Text className="mt-2 text-base font-extrabold text-brand-navy">{success.staffId}</Text>
+              <Text className="mt-2 text-base font-extrabold text-brand-teal">{success.staffId}</Text>
             ) : null}
           </Card>
-          <GradientButton title="Add Another" onPress={resetForm} style={{ marginTop: 24 }} />
-          <GradientButton title="Done" variant="outline" onPress={() => navigation.goBack()} style={{ marginTop: 12 }} />
+          {!isEditMode && (
+            <GradientButton title="Add Another" onPress={resetForm} style={{ marginTop: 24 }} />
+          )}
+          <GradientButton
+            title="Done"
+            variant={isEditMode ? 'solid' : 'outline'}
+            onPress={() => navigation.goBack()}
+            style={{ marginTop: isEditMode ? 24 : 12 }}
+          />
         </View>
       </SafeAreaView>
     );
@@ -121,83 +170,98 @@ export default function AddStaffScreen({ navigation }) {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
-      <ScreenHeader title="Add Staff" onBack={() => navigation.goBack()} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView className="px-6 pt-2" keyboardShouldPersistTaps="handled">
-          <Text className="mb-2 text-sm font-medium text-ink-soft">Role</Text>
-          <View className="mb-5 flex-row">
-            {ROLES.map((r) => (
-              <Chip key={r} label={r[0].toUpperCase() + r.slice(1)} selected={role === r} onPress={() => setRole(r)} />
-            ))}
-          </View>
+      <ScreenHeader title={isEditMode ? 'Edit Staff' : 'Add Staff'} onBack={() => navigation.goBack()} />
+      <KeyboardAwareScrollView
+        className="px-6 pt-2"
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={40}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        <Text className="mb-2 text-sm font-medium text-ink-soft">Role</Text>
+        <View className="mb-5 flex-row">
+          {ROLES.map((r) => (
+            <Chip
+              key={r}
+              label={r[0].toUpperCase() + r.slice(1)}
+              selected={role === r}
+              onPress={() => !isEditMode && setRole(r)}
+            />
+          ))}
+        </View>
 
-          <Input label="Full Name" value={common.name} onChangeText={setC('name')} />
-          <Input label="Email" value={common.email} onChangeText={setC('email')} autoCapitalize="none" keyboardType="email-address" />
-          <Input label="Password" value={common.password} onChangeText={setC('password')} secureTextEntry />
-          <Input label="Phone" value={common.phone} onChangeText={setC('phone')} keyboardType="phone-pad" />
+        <Input label="Full Name" value={common.name} onChangeText={setC('name')} />
+        <Input label="Email" value={common.email} onChangeText={setC('email')} autoCapitalize="none" keyboardType="email-address" />
+        <Input
+          label={isEditMode ? 'Password (leave blank to keep current)' : 'Password'}
+          value={common.password}
+          onChangeText={setC('password')}
+          secureTextEntry
+        />
+        <Input label="Phone" value={common.phone} onChangeText={setC('phone')} keyboardType="phone-pad" />
 
-          {role === 'doctor' && (
-            <>
-              <Text className="mb-2 text-sm font-medium text-ink-soft">Department</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-                {departments.map((d) => (
-                  <Chip key={d._id} label={d.name} selected={departmentId === d._id} onPress={() => setDepartmentId(d._id)} />
-                ))}
-              </ScrollView>
-              <Input label="Specialization" value={specialization} onChangeText={setSpecialization} />
-              <Input label="Consultation Fee" value={consultationFee} onChangeText={setConsultationFee} keyboardType="numeric" />
+        {role === 'doctor' && (
+          <>
+            <Text className="mb-2 text-sm font-medium text-ink-soft">Department</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+              {departments.map((d) => (
+                <Chip key={d._id} label={d.name} selected={departmentId === d._id} onPress={() => setDepartmentId(d._id)} />
+              ))}
+            </ScrollView>
+            <Input label="Specialization" value={specialization} onChangeText={setSpecialization} />
+            <Input
+              label="Qualifications"
+              value={qualifications}
+              onChangeText={setQualifications}
+              placeholder="e.g. MBBS, MD (Cardiology)"
+            />
+            <Input label="Experience (years)" value={experienceYears} onChangeText={setExperienceYears} keyboardType="numeric" />
+            <Input label="Consultation Fee" value={consultationFee} onChangeText={setConsultationFee} keyboardType="numeric" />
 
-              <Text className="mb-2 text-sm font-medium text-ink-soft">Availability</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-                {DAYS.map((d) => (
-                  <Chip key={d} label={d} selected={slotDay === d} onPress={() => setSlotDay(d)} />
-                ))}
-              </ScrollView>
-              <View className="mb-3 flex-row items-center">
-                <Input
-                  containerClassName="flex-1 mr-2 mb-0"
-                  label="Start"
-                  value={slotStart}
-                  onChangeText={setSlotStart}
-                  placeholder="09:00"
-                />
-                <Input
-                  containerClassName="flex-1 ml-2 mb-0"
-                  label="End"
-                  value={slotEnd}
-                  onChangeText={setSlotEnd}
-                  placeholder="09:30"
-                />
-              </View>
-              <GradientButton title="Add Slot" variant="outline" onPress={addSlot} style={{ marginBottom: 16, height: 44 }} />
-              <View className="mb-4 flex-row flex-wrap">
-                {slots.map((slot, index) => (
-                  <View key={`${slot.day}-${slot.startTime}-${index}`} className="mb-2 mr-2 flex-row items-center rounded-full bg-surface-muted px-3 py-2">
-                    <Text className="mr-2 text-xs text-ink">{slot.day} {slot.startTime}-{slot.endTime}</Text>
-                    <Ionicons name="close-circle" size={16} color={colors.inkFaint} onPress={() => removeSlot(index)} />
-                  </View>
-                ))}
-              </View>
-            </>
-          )}
+            <Text className="mb-2 text-sm font-medium text-ink-soft">Availability</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
+              {DAYS.map((d) => (
+                <Chip key={d} label={d} selected={slotDay === d} onPress={() => setSlotDay(d)} />
+              ))}
+            </ScrollView>
+            <View className="mb-3 flex-row items-center">
+              <TimeFieldInput containerClassName="flex-1 mr-2 mb-0" label="Start" value={slotStart} onChange={setSlotStart} />
+              <TimeFieldInput containerClassName="flex-1 ml-2 mb-0" label="End" value={slotEnd} onChange={setSlotEnd} />
+            </View>
+            <GradientButton title="Add Slot" variant="outline" onPress={addSlot} style={{ marginBottom: 16, height: 44 }} />
+            <View className="mb-4 flex-row flex-wrap">
+              {slots.map((slot, index) => (
+                <View key={`${slot.day}-${slot.startTime}-${index}`} className="mb-2 mr-2 flex-row items-center rounded-full bg-surface-muted px-3 py-2">
+                  <Text className="mr-2 text-xs text-ink">{slot.day} {slot.startTime}-{slot.endTime}</Text>
+                  <Ionicons name="close-circle" size={16} color={colors.inkFaint} onPress={() => removeSlot(index)} />
+                </View>
+              ))}
+            </View>
+          </>
+        )}
 
-          {role === 'nurse' && (
-            <>
-              <Input label="Ward" value={ward} onChangeText={setWard} />
-              <Text className="mb-2 text-sm font-medium text-ink-soft">Shift</Text>
-              <View className="mb-4 flex-row">
-                {SHIFTS.map((s) => (
-                  <Chip key={s} label={s[0].toUpperCase() + s.slice(1)} selected={shift === s} onPress={() => setShift(s)} />
-                ))}
-              </View>
-            </>
-          )}
+        {role === 'nurse' && (
+          <>
+            <Input label="Ward" value={ward} onChangeText={setWard} />
+            <Text className="mb-2 text-sm font-medium text-ink-soft">Shift</Text>
+            <View className="mb-4 flex-row">
+              {SHIFTS.map((s) => (
+                <Chip key={s} label={s[0].toUpperCase() + s.slice(1)} selected={shift === s} onPress={() => setShift(s)} />
+              ))}
+            </View>
+          </>
+        )}
 
-          {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
+        <DocumentPickerField value={documents} onChange={setDocuments} />
 
-          <GradientButton title="Add Staff Member" onPress={handleSubmit} loading={loading} style={{ marginBottom: 32 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
+
+        <GradientButton
+          title={isEditMode ? 'Save Changes' : 'Add Staff Member'}
+          onPress={handleSubmit}
+          loading={loading}
+          style={{ marginBottom: 32 }}
+        />
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

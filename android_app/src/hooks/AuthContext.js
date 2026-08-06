@@ -40,8 +40,8 @@ export function AuthProvider({ children }) {
     return user;
   };
 
-  const patientLogin = async ({ phone, mrNo }) => {
-    const { token, user } = await api.post('/auth/patient-login', { phone, mrNo });
+  const patientLogin = async ({ phone, password }) => {
+    const { token, user } = await api.post('/auth/patient-login', { phone, password });
     await persist({ token, role: 'patient', user });
     return user;
   };

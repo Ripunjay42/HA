@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../../components/ScreenHeader';
 import Input from '../../components/Input';
@@ -48,35 +49,38 @@ export default function SymptomCheckScreen({ navigation }) {
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
       <ScreenHeader title="Book a Visit" onBack={() => navigation.goBack()} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView className="px-6 pt-2" keyboardShouldPersistTaps="handled">
-          <View className="mb-5 flex-row items-start rounded-2xl bg-surface-muted p-4">
-            <Ionicons name="information-circle" size={18} color={colors.teal} />
-            <Text className="ml-2 flex-1 text-xs text-ink-soft">
-              Tell us what's bothering you and we'll match you with the right department. If
-              nothing matches, you can still browse all departments yourself.
-            </Text>
-          </View>
+      <KeyboardAwareScrollView
+        className="px-6 pt-2"
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={40}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        <View className="mb-5 flex-row items-start rounded-2xl bg-surface-muted p-4">
+          <Ionicons name="information-circle" size={18} color={colors.teal} />
+          <Text className="ml-2 flex-1 text-xs text-ink-soft">
+            Tell us what's bothering you and we'll match you with the right department. If
+            nothing matches, you can still browse all departments yourself.
+          </Text>
+        </View>
 
-          <Input
-            label="Purpose of Visit"
-            value={purpose}
-            onChangeText={setPurpose}
-            placeholder="e.g. Routine checkup"
-          />
-          <Input
-            label="Symptoms (comma separated)"
-            value={symptoms}
-            onChangeText={setSymptoms}
-            placeholder="e.g. chest pain, breathlessness"
-            multiline
-          />
+        <Input
+          label="Purpose of Visit"
+          value={purpose}
+          onChangeText={setPurpose}
+          placeholder="e.g. Routine checkup"
+        />
+        <Input
+          label="Symptoms (comma separated)"
+          value={symptoms}
+          onChangeText={setSymptoms}
+          placeholder="e.g. chest pain, breathlessness"
+          multiline
+        />
 
-          {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
+        {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
 
-          <GradientButton title="Find a Doctor" onPress={handleContinue} loading={loading} style={{ marginBottom: 32 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <GradientButton title="Find a Doctor" onPress={handleContinue} loading={loading} style={{ marginBottom: 32 }} />
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

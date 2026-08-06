@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../../components/ScreenHeader';
 import AnimatedFormHero from '../../components/AnimatedFormHero';
@@ -53,7 +54,7 @@ export default function PatientVitalsScreen({ navigation, route }) {
           <Text className="text-center text-2xl font-bold text-ink">Vitals Recorded</Text>
           <Card className="mt-8 w-full items-center">
             <Text className="text-xs font-semibold uppercase tracking-wide text-ink-soft">UHID Generated</Text>
-            <Text className="mt-2 text-2xl font-extrabold text-brand-navy">{result.uhid}</Text>
+            <Text className="mt-2 text-2xl font-extrabold text-brand-teal">{result.uhid}</Text>
             <Text className="mt-3 text-xs text-ink-soft">Token No: {result.tokenNo}</Text>
           </Card>
           <GradientButton title="Done" onPress={() => navigation.popToTop()} style={{ width: '100%', marginTop: 32 }} />
@@ -65,31 +66,34 @@ export default function PatientVitalsScreen({ navigation, route }) {
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
       <ScreenHeader title="Record Vitals" onBack={() => navigation.goBack()} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView className="px-6 pt-2" keyboardShouldPersistTaps="handled">
-          <AnimatedFormHero
-            icon="pulse"
-            title="Recording Vitals"
-            subtitle="Enter the patient's readings below to generate their UHID and token."
-          />
-          <Input label="Weight (kg)" value={form.weight} onChangeText={set('weight')} keyboardType="numeric" />
-          <Input label="Blood Pressure" value={form.bp} onChangeText={set('bp')} placeholder="120/80" />
-          <Input label="Temperature (°F)" value={form.temperature} onChangeText={set('temperature')} keyboardType="numeric" />
-          <Input label="Height (cm)" value={form.height} onChangeText={set('height')} keyboardType="numeric" />
-          <Input label="Pulse (bpm)" value={form.pulse} onChangeText={set('pulse')} keyboardType="numeric" />
+      <KeyboardAwareScrollView
+        className="px-6 pt-2"
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={40}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        <AnimatedFormHero
+          icon="pulse"
+          title="Recording Vitals"
+          subtitle="Enter the patient's readings below to generate their UHID and token."
+        />
+        <Input label="Weight (kg)" value={form.weight} onChangeText={set('weight')} keyboardType="numeric" />
+        <Input label="Blood Pressure" value={form.bp} onChangeText={set('bp')} placeholder="120/80" />
+        <Input label="Temperature (°F)" value={form.temperature} onChangeText={set('temperature')} keyboardType="numeric" />
+        <Input label="Height (cm)" value={form.height} onChangeText={set('height')} keyboardType="numeric" />
+        <Input label="Pulse (bpm)" value={form.pulse} onChangeText={set('pulse')} keyboardType="numeric" />
 
-          <Text className="mb-2 text-sm font-medium text-ink-soft">Blood Group</Text>
-          <View className="mb-6 flex-row flex-wrap">
-            {BLOOD_GROUPS.map((bg) => (
-              <Chip key={bg} label={bg} selected={form.bloodGroup === bg} onPress={() => set('bloodGroup')(bg)} className="mb-3" />
-            ))}
-          </View>
+        <Text className="mb-2 text-sm font-medium text-ink-soft">Blood Group</Text>
+        <View className="mb-6 flex-row flex-wrap">
+          {BLOOD_GROUPS.map((bg) => (
+            <Chip key={bg} label={bg} selected={form.bloodGroup === bg} onPress={() => set('bloodGroup')(bg)} className="mb-3" />
+          ))}
+        </View>
 
-          {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
+        {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
 
-          <GradientButton title="Save Vitals & Generate UHID" onPress={handleSubmit} loading={loading} style={{ marginBottom: 32 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <GradientButton title="Save Vitals & Generate UHID" onPress={handleSubmit} loading={loading} style={{ marginBottom: 32 }} />
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

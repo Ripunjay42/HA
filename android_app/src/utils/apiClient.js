@@ -11,6 +11,7 @@ let authToken = null;
 export const setAuthToken = (token) => {
   authToken = token;
 };
+export const getAuthToken = () => authToken;
 
 const request = async (method, path, body) => {
   const res = await fetch(`${API_BASE_URL}${path}`, {
