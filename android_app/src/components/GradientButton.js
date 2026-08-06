@@ -13,8 +13,8 @@ export default function GradientButton({
       <Pressable
         onPress={onPress}
         disabled={isDisabled}
-        className="h-14 items-center justify-center rounded-full border-2 border-brand-teal"
-        style={[{ opacity: isDisabled ? 0.6 : 1 }, style]}
+        className="items-center justify-center rounded-full border-2 border-brand-teal"
+        style={[{ height: 56, opacity: isDisabled ? 0.6 : 1 }, style]}
       >
         <Text className="text-base font-semibold text-brand-teal">{title}</Text>
       </Pressable>
@@ -22,13 +22,17 @@ export default function GradientButton({
   }
 
   return (
-    <Pressable onPress={onPress} disabled={isDisabled} style={[{ opacity: isDisabled ? 0.6 : 1 }, style]}>
+    <Pressable
+      onPress={onPress}
+      disabled={isDisabled}
+      style={[{ height: 56, opacity: isDisabled ? 0.6 : 1 }, style]}
+    >
       <LinearGradient
         colors={gradients.cta}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={{
-          height: 56,
+          flex: 1,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',

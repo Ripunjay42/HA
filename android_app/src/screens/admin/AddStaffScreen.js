@@ -16,6 +16,7 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 const ROLES = ['doctor', 'nurse', 'receptionist'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const SHIFTS = ['morning', 'evening', 'night'];
+const ROLE_LABEL = { doctor: 'Doctor', nurse: 'Nurse', receptionist: 'Receptionist' };
 
 const flattenAvailability = (availability = []) =>
   availability.flatMap(({ day, slots }) => slots.map((slot) => ({ day, startTime: slot.startTime, endTime: slot.endTime })));
@@ -25,7 +26,7 @@ export default function AddStaffScreen({ navigation, route }) {
   const editing = route?.params?.staff || null;
   const isEditMode = !!editing;
 
-  const [role, setRole] = useState(editing?.role || 'doctor');
+  const [role, setRole] = useState(editing?.role || route?.params?.defaultRole || 'doctor');
   const [departments, setDepartments] = useState([]);
   const [common, setCommon] = useState({
     name: editing?.name || '',
@@ -170,7 +171,10 @@ export default function AddStaffScreen({ navigation, route }) {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
-      <ScreenHeader title={isEditMode ? 'Edit Staff' : 'Add Staff'} onBack={() => navigation.goBack()} />
+      <ScreenHeader
+        title={isEditMode ? `Edit ${ROLE_LABEL[role]}` : `Add ${ROLE_LABEL[role]}`}
+        onBack={() => navigation.goBack()}
+      />
       <KeyboardAwareScrollView
         className="px-6 pt-2"
         keyboardShouldPersistTaps="handled"

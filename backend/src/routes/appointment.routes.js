@@ -12,7 +12,7 @@ router.use(authenticate);
 router.post('/', authorize('patient', 'nurse'), createAppointment);
 router.get('/mine', authorize('patient'), getMine);
 router.get('/doctor/mine', authorize('doctor'), getDoctorAppointments);
-router.get('/patient/:uhid', authorize('patient', 'nurse'), getForUhid);
+router.get('/patient/:uhid', authorize('patient', 'nurse', 'admin'), getForUhid);
 router.get('/:id', getAppointment);
 router.get('/:id/slots', getAvailableSlots);
 

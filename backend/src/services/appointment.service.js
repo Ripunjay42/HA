@@ -27,6 +27,11 @@ const assertCanActOnPatient = (patient, actor) => {
   throw new ApiError(403, 'You are not authorized to act on this patient\'s behalf');
 };
 
+// Statuses before a doctor/slot is locked in and paid for -- resuming the
+// booking flow (e.g. re-entering symptom check or department browsing)
+// should continue this appointment rather than spawn a duplicate.
+const IN_PROGRESS_STATUSES = ['pending_doctor', 'pending_slot', 'pending_payment'];
+
 export const createAppointment = async ({ uhid, purpose, symptoms }, actor) => {
   const patient = await Patient.findOne({ uhid });
   if (!patient) throw new ApiError(404, 'Patient not found or UHID not yet generated');
@@ -34,6 +39,21 @@ export const createAppointment = async ({ uhid, purpose, symptoms }, actor) => {
   assertCanActOnPatient(patient, actor);
 
   const match = await matchDepartmentBySymptoms(symptoms, purpose);
+
+  const existing = await Appointment.findOne({
+    patientId: patient._id,
+    status: { $in: IN_PROGRESS_STATUSES },
+  }).sort({ createdAt: -1 });
+
+  if (existing) {
+    existing.purpose = purpose;
+    existing.symptoms = symptoms;
+    existing.symptomsEnteredBy = actor.role;
+    existing.matchedDepartment = match?.department._id || null;
+    existing.matchedDoctors = match?.doctors.map((d) => d._id) || [];
+    await existing.save();
+    return getAppointmentOr404(existing._id);
+  }
 
   const appointment = await Appointment.create({
     patientId: patient._id,
@@ -131,7 +151,7 @@ export const getMyAppointments = (patientId) =>
 export const getAppointmentsForUhid = async (uhid, actor) => {
   const patient = await Patient.findOne({ uhid });
   if (!patient) throw new ApiError(404, 'Patient not found');
-  assertCanActOnPatient(patient, actor);
+  if (actor.role !== 'admin') assertCanActOnPatient(patient, actor);
   return Appointment.find({ patientId: patient._id }).populate(POPULATE_FIELDS).sort({ createdAt: -1 });
 };
 

@@ -9,19 +9,28 @@ import { useAuth } from '../../hooks/AuthContext';
 import api from '../../utils/apiClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
-const LINKS = [
-  { key: 'staff', label: 'Staff', icon: 'people', screen: 'StaffList' },
-  { key: 'add-staff', label: 'Add Staff', icon: 'person-add', screen: 'AddStaff' },
+const STAFF_ROLES = [
+  { key: 'doctor', label: 'Doctors', icon: 'medkit' },
+  { key: 'nurse', label: 'Nurses', icon: 'heart' },
+  { key: 'receptionist', label: 'Receptionists', icon: 'people' },
+];
+
+const OTHER_LINKS = [
   { key: 'departments', label: 'Departments', icon: 'body', screen: 'AdminDepartments' },
   { key: 'companies', label: 'Companies', icon: 'business', screen: 'AdminCompanies' },
 ];
 
-const StatTile = ({ label, value }) => (
-  <Card className="mb-3 mr-3 w-[47%]">
-    <Text className="text-2xl font-extrabold text-ink">{value}</Text>
-    <Text className="text-xs text-ink-soft">{label}</Text>
-  </Card>
-);
+const StatTile = ({ label, value, onPress }) => {
+  const Wrapper = onPress ? Pressable : View;
+  return (
+    <Wrapper onPress={onPress} className="mb-3 mr-3 w-[47%]">
+      <Card>
+        <Text className="text-2xl font-extrabold text-ink">{value}</Text>
+        <Text className="text-xs text-ink-soft">{label}</Text>
+      </Card>
+    </Wrapper>
+  );
+};
 
 export default function AdminHomeScreen({ navigation }) {
   const { user, logout } = useAuth();
@@ -34,6 +43,8 @@ export default function AdminHomeScreen({ navigation }) {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const staffCount = (key) => reports?.staff?.[`${key}s`] ?? 0;
 
   return (
     <SafeAreaView className="flex-1 bg-surface-app" edges={['top']}>
@@ -56,25 +67,47 @@ export default function AdminHomeScreen({ navigation }) {
       >
         {reports && (
           <View className="mb-2 flex-row flex-wrap justify-between">
-            <StatTile label="Total Patients" value={reports.patients} />
+            <StatTile
+              label="Total Patients"
+              value={reports.patients}
+              onPress={() => navigation.navigate('PatientList')}
+            />
             <StatTile label="Total Revenue" value={`₹${reports.totalRevenue}`} />
-            <StatTile label="Doctors" value={reports.staff.doctors} />
-            <StatTile label="Nurses" value={reports.staff.nurses} />
-            <StatTile label="Receptionists" value={reports.staff.receptionists} />
-            <StatTile label="Confirmed Appts" value={reports.appointmentsByStatus.confirmed || 0} />
+            <StatTile label="Confirmed Appointments" value={reports.appointmentsByStatus.confirmed || 0} />
           </View>
         )}
 
-        <Text className="mb-3 mt-3 text-base font-bold text-ink">Manage</Text>
-        <View className="flex-row flex-wrap justify-between">
-          {LINKS.map((link) => (
+        <Text className="mb-3 mt-3 text-base font-bold text-ink">Manage Staff</Text>
+        <View className="mb-2 flex-row flex-wrap items-center justify-start gap-1">
+          {STAFF_ROLES.map((r) => (
+            <Pressable
+              key={r.key}
+              onPress={() => navigation.navigate('StaffList', { role: r.key })}
+              style={{ width: '31%' }}
+            >
+              <Card className="mb-4 items-center" style={{ aspectRatio: 1, justifyContent: 'center', padding: 10 }}>
+                <Ionicons name={r.icon} size={24} color={colors.teal} />
+                <Text className="mt-2 text-center text-md font-semibold text-ink">{r.label}</Text>
+                {reports && (
+                  <Text className="mt-0.5 text-center text-[11px] text-ink-soft">{staffCount(r.key)}</Text>
+                )}
+              </Card>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text className="mb-3 mt-3 text-base font-bold text-ink">Manage Others</Text>
+        <View className="mb-2 flex-row flex-wrap items-center justify-start  gap-1">
+          {OTHER_LINKS.map((link) => (
             <Pressable
               key={link.key}
               onPress={() => navigation.navigate(link.screen)}
-              className="mb-4 w-[47%] items-center rounded-xl2 border border-line bg-surface py-5"
+              style={{ width: '31%' }}
             >
-              <Ionicons name={link.icon} size={24} color={colors.teal} />
-              <Text className="mt-2 text-sm font-semibold text-ink">{link.label}</Text>
+              <Card className="mb-4 items-center" style={{ aspectRatio: 1, justifyContent: 'center', padding: 10 }}>
+                <Ionicons name={link.icon} size={24} color={colors.teal} />
+                <Text className="mt-2 text-center text-xs font-semibold text-ink">{link.label}</Text>
+              </Card>
             </Pressable>
           ))}
         </View>

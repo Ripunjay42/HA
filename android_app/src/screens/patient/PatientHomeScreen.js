@@ -50,6 +50,36 @@ export default function PatientHomeScreen({ navigation }) {
 
   const hasUhid = !!user?.uhid;
 
+  // Lets a patient tap back into an in-progress appointment and pick up
+  // exactly where they left off, instead of only landing on the list.
+  const resumeAppointment = (appointment) => {
+    if (appointment.status === 'pending_doctor') {
+      if (appointment.matchedDepartment) {
+        navigation.navigate('DoctorList', {
+          departmentId: appointment.matchedDepartment._id,
+          departmentName: appointment.matchedDepartment.name,
+          appointmentId: appointment._id,
+          matched: true,
+        });
+      } else {
+        navigation.navigate('Departments', { appointmentId: appointment._id });
+      }
+      return;
+    }
+    if (appointment.status === 'pending_slot' && appointment.selectedDoctor) {
+      navigation.navigate('BookSlot', { appointmentId: appointment._id, doctor: appointment.selectedDoctor });
+      return;
+    }
+    if (appointment.status === 'pending_payment' && appointment.selectedDoctor) {
+      navigation.navigate('Payment', {
+        appointmentId: appointment._id,
+        amount: appointment.selectedDoctor.consultationFee,
+      });
+      return;
+    }
+    navigation.navigate('Appointments');
+  };
+
   const handleQuickAction = (action) => {
     if (!action.screen) return;
     if (action.screen === 'AppointmentsTab') {
@@ -136,24 +166,26 @@ export default function PatientHomeScreen({ navigation }) {
                 View All
               </Text>
             </View>
-            <Card className="flex-row items-center">
-              <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
-                <Ionicons name="person" size={22} color={colors.ink} />
-              </View>
-              <View className="flex-1">
-                <Text className="text-sm font-bold text-ink">
-                  {upcoming.selectedDoctor ? upcoming.selectedDoctor.name : 'Doctor not selected yet'}
-                </Text>
-                <Text className="text-xs text-ink-soft">
-                  {upcoming.matchedDepartment?.name || 'General'}
-                  {upcoming.slot?.startTime ? ` • ${upcoming.slot.startTime}` : ''}
-                </Text>
-                <View className="mt-2 self-start">
-                  <StatusBadge status={upcoming.status} color={appointmentStatusColor[upcoming.status]} />
+            <Pressable onPress={() => resumeAppointment(upcoming)}>
+              <Card className="flex-row items-center">
+                <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
+                  <Ionicons name="person" size={22} color={colors.ink} />
                 </View>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
-            </Card>
+                <View className="flex-1">
+                  <Text className="text-sm font-bold text-ink">
+                    {upcoming.selectedDoctor ? upcoming.selectedDoctor.name : 'Doctor not selected yet'}
+                  </Text>
+                  <Text className="text-xs text-ink-soft">
+                    {upcoming.matchedDepartment?.name || 'General'}
+                    {upcoming.slot?.startTime ? ` • ${upcoming.slot.startTime}` : ''}
+                  </Text>
+                  <View className="mt-2 self-start">
+                    <StatusBadge status={upcoming.status} color={appointmentStatusColor[upcoming.status]} />
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
+              </Card>
+            </Pressable>
           </View>
         )}
 

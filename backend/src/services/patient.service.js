@@ -42,7 +42,10 @@ export const registerPatient = async (data, { source, registeredBy }) => {
 // mongoose tracks unselected paths and skips them on save rather than
 // nulling them out or failing required validation.
 export const getPatientByMrNo = async (mrNo) => {
-  const patient = await Patient.findOne({ mrNo }).select('-passwordHash');
+  const patient = await Patient.findOne({ mrNo })
+    .select('-passwordHash')
+    .populate('assignedNurse', 'name staffId')
+    .populate('companyId', 'name code');
   if (!patient) throw new ApiError(404, 'Patient not found');
   return patient;
 };
@@ -93,7 +96,10 @@ export const unassignNurse = async (mrNo) => {
 export const recordVitals = async (mrNo, vitals, nurseId) => {
   const patient = await getPatientByMrNo(mrNo);
 
-  if (!patient.assignedNurse || String(patient.assignedNurse) !== String(nurseId)) {
+  // getPatientByMrNo populates assignedNurse into {_id, name, staffId}, so
+  // compare against its _id rather than stringifying the whole subdocument.
+  const assignedNurseId = patient.assignedNurse?._id || patient.assignedNurse;
+  if (!assignedNurseId || String(assignedNurseId) !== String(nurseId)) {
     throw new ApiError(403, 'You are not the nurse assigned to this patient');
   }
 

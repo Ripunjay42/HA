@@ -1,5 +1,7 @@
-import { ActivityIndicator, View } from 'react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as NavigationBar from 'expo-navigation-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -24,6 +26,14 @@ function AppContent() {
     Ubuntu_500Medium,
     Ubuntu_700Bold,
   });
+
+  // Android's gesture nav bar is transparent by default (edge-to-edge);
+  // only its icon contrast can be set, not a background color -- so this
+  // just keeps the gesture pill/buttons visible against the app's theme.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    NavigationBar.setStyle(isDark ? 'light' : 'dark');
+  }, [isDark]);
 
   if (!fontsLoaded) {
     return (

@@ -13,6 +13,7 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 const ROLES = ['doctor', 'nurse', 'receptionist'];
 
 const ROLE_ICON = { doctor: 'medkit', nurse: 'heart', receptionist: 'people' };
+const ROLE_LABEL = { doctor: 'Doctor', nurse: 'Nurse', receptionist: 'Receptionist' };
 
 const subtitleFor = (role, item) => {
   if (role === 'doctor') return item.specialization || 'General';
@@ -20,9 +21,9 @@ const subtitleFor = (role, item) => {
   return item.staffId || 'Receptionist';
 };
 
-export default function StaffListScreen({ navigation }) {
+export default function StaffListScreen({ navigation, route }) {
   const { colors } = useThemeColors();
-  const [role, setRole] = useState('doctor');
+  const [role, setRole] = useState(route?.params?.role || 'doctor');
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -42,7 +43,22 @@ export default function StaffListScreen({ navigation }) {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
-      <ScreenHeader title="Staff" onBack={() => navigation.goBack()} />
+      <ScreenHeader
+        title={`${ROLE_LABEL[role]}s`}
+        onBack={() => navigation.goBack()}
+        right={
+          <Pressable
+            onPress={() => navigation.navigate('AddStaff', { defaultRole: role })}
+            style={{
+              height: 40, width: 40, borderRadius: 20,
+              alignItems: 'center', justifyContent: 'center',
+              backgroundColor: colors.teal,
+            }}
+          >
+            <Ionicons name="add" size={22} color="#fff" />
+          </Pressable>
+        }
+      />
       <View className="flex-row px-5">
         {ROLES.map((r) => (
           <Chip key={r} label={r[0].toUpperCase() + r.slice(1)} selected={role === r} onPress={() => setRole(r)} />
@@ -53,7 +69,9 @@ export default function StaffListScreen({ navigation }) {
         keyExtractor={(item) => item._id}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text className="mt-8 text-center text-sm text-ink-soft">No {role}s yet.</Text>}
+        ListEmptyComponent={
+          <Text className="mt-8 text-center text-sm text-ink-soft">No {role}s yet. Tap + to add one.</Text>
+        }
         renderItem={({ item }) => (
           <Pressable onPress={() => setSelected(item)}>
             <Card className="mb-3 flex-row items-center">
