@@ -10,10 +10,13 @@ import GradientButton from '../../components/GradientButton';
 import api from '../../utils/apiClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
-export default function AddCompanyScreen({ navigation }) {
+export default function AddCompanyScreen({ navigation, route }) {
   const { colors } = useThemeColors();
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
+  const editing = route?.params?.company || null;
+  const isEditMode = !!editing;
+
+  const [name, setName] = useState(editing?.name || '');
+  const [code, setCode] = useState(editing?.code || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
@@ -26,10 +29,15 @@ export default function AddCompanyScreen({ navigation }) {
     }
     setSaving(true);
     try {
-      const { company } = await api.post('/companies', { name, code });
-      setSuccess(company);
+      if (isEditMode) {
+        const { company } = await api.patch(`/companies/${editing._id}`, { name, code });
+        setSuccess(company);
+      } else {
+        const { company } = await api.post('/companies', { name, code });
+        setSuccess(company);
+      }
     } catch (err) {
-      setError(err.message || 'Unable to add company');
+      setError(err.message || `Unable to ${isEditMode ? 'update' : 'add'} company`);
     } finally {
       setSaving(false);
     }
@@ -44,15 +52,22 @@ export default function AddCompanyScreen({ navigation }) {
   if (success) {
     return (
       <SafeAreaView className="flex-1 bg-surface-app">
-        <ScreenHeader title="Company Added" onBack={() => navigation.goBack()} />
+        <ScreenHeader title={isEditMode ? 'Company Updated' : 'Company Added'} onBack={() => navigation.goBack()} />
         <View className="flex-1 px-6 pt-4">
           <Card className="items-center">
             <Ionicons name="checkmark-circle" size={40} color={colors.success} />
             <Text className="mt-2 text-lg font-bold text-ink">{success.name}</Text>
             {success.code ? <Text className="text-xs text-ink-soft">Code: {success.code}</Text> : null}
           </Card>
-          <GradientButton title="Add Another" onPress={resetForm} style={{ marginTop: 24 }} />
-          <GradientButton title="Done" variant="outline" onPress={() => navigation.goBack()} style={{ marginTop: 12 }} />
+          {!isEditMode && (
+            <GradientButton title="Add Another" onPress={resetForm} style={{ marginTop: 24 }} />
+          )}
+          <GradientButton
+            title="Done"
+            variant={isEditMode ? 'solid' : 'outline'}
+            onPress={() => navigation.goBack()}
+            style={{ marginTop: isEditMode ? 24 : 12 }}
+          />
         </View>
       </SafeAreaView>
     );
@@ -60,7 +75,7 @@ export default function AddCompanyScreen({ navigation }) {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
-      <ScreenHeader title="Add Company" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={isEditMode ? 'Edit Company' : 'Add Company'} onBack={() => navigation.goBack()} />
       <KeyboardAwareScrollView
         className="px-6 pt-2"
         keyboardShouldPersistTaps="handled"
@@ -73,7 +88,12 @@ export default function AddCompanyScreen({ navigation }) {
         <Input label="Company Name" value={name} onChangeText={setName} placeholder="e.g. Acme Industries" />
         <Input label="Code (optional)" value={code} onChangeText={setCode} placeholder="e.g. ACM001" />
         {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
-        <GradientButton title="Add Company" onPress={handleAdd} loading={saving} style={{ marginBottom: 32 }} />
+        <GradientButton
+          title={isEditMode ? 'Save Changes' : 'Add Company'}
+          onPress={handleAdd}
+          loading={saving}
+          style={{ marginBottom: 32 }}
+        />
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );

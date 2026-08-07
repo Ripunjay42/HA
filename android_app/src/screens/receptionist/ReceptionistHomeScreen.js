@@ -25,7 +25,7 @@ export default function ReceptionistHomeScreen({ navigation }) {
         </View>
         <View className="flex-row items-center" style={{ gap: 12 }}>
           <ThemeToggle />
-          <Text className="text-xs font-semibold text-brand-teal" onPress={logout}>
+          <Text className="text-md font-extrabold text-brand-teal" onPress={logout}>
             Log Out
           </Text>
         </View>

@@ -47,7 +47,7 @@ export default function NurseHomeScreen({ navigation }) {
         </View>
         <View className="flex-row items-center" style={{ gap: 12 }}>
           <ThemeToggle />
-          <Text className="text-xs font-semibold text-brand-teal" onPress={logout}>
+          <Text className="text-md font-extrabold text-brand-teal" onPress={logout}>
             Log Out
           </Text>
         </View>
@@ -93,7 +93,7 @@ export default function NurseHomeScreen({ navigation }) {
               <StatusBadge status={item.status} color={patientStatusColor[item.status]} />
             </View>
 
-            {item.vitals?.recordedAt ? (
+            {item.status === 'token_generated' && item.vitals?.recordedAt ? (
               <View className="mt-4 rounded-2xl bg-surface-muted p-3">
                 <Text className="text-xs font-semibold text-ink-soft">Vitals already recorded</Text>
                 <Text className="mt-1 text-xs text-ink-soft">
@@ -102,7 +102,7 @@ export default function NurseHomeScreen({ navigation }) {
               </View>
             ) : (
               <GradientButton
-                title="Record Vitals"
+                title={item.vitals?.recordedAt ? 'Record Vitals Again' : 'Record Vitals'}
                 onPress={() => navigation.navigate('PatientVitals', { mrNo: item.mrNo })}
                 style={{ marginTop: 16, height: 44 }}
               />

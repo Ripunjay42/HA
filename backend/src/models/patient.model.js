@@ -40,7 +40,7 @@ const patientSchema = new Schema({
     type: String,
     enum: [
       'registered', 'nurse_assigned',
-      'vitals_recorded', 'token_generated',
+      'vitals_recorded', 'token_generated', 'token_expired',
     ],
     default: 'registered',
   },

@@ -66,19 +66,19 @@ const run = async () => {
   const doctors = [
     {
       name: 'Dr. James Carter', email: 'doctor1@has.local', passwordHash: 'Doctor@123',
-      departmentId: deptByName.Cardiology, specialization: 'Cardiologist',
+      staffId: 'DR00001', departmentId: deptByName.Cardiology, specialization: 'Cardiologist',
       qualifications: 'MD, DM Cardiology', experienceYears: 12, consultationFee: 500,
       availability: availabilityForAllDays(),
     },
     {
       name: 'Dr. Priya Sharma', email: 'doctor2@has.local', passwordHash: 'Doctor@123',
-      departmentId: deptByName['General Medicine'], specialization: 'General Physician',
+      staffId: 'DR00002', departmentId: deptByName['General Medicine'], specialization: 'General Physician',
       qualifications: 'MBBS, MD', experienceYears: 8, consultationFee: 300,
       availability: availabilityForAllDays(),
     },
     {
       name: 'Dr. Arjun Mehta', email: 'doctor3@has.local', passwordHash: 'Doctor@123',
-      departmentId: deptByName.Orthopedics, specialization: 'Orthopedic Surgeon',
+      staffId: 'DR00003', departmentId: deptByName.Orthopedics, specialization: 'Orthopedic Surgeon',
       qualifications: 'MS Ortho', experienceYears: 10, consultationFee: 400,
       availability: availabilityForAllDays(),
     },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
@@ -222,24 +222,51 @@ export default function AddStaffScreen({ navigation, route }) {
             <Input label="Consultation Fee" value={consultationFee} onChangeText={setConsultationFee} keyboardType="numeric" />
 
             <Text className="mb-2 text-sm font-medium text-ink-soft">Availability</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-              {DAYS.map((d) => (
-                <Chip key={d} label={d} selected={slotDay === d} onPress={() => setSlotDay(d)} />
-              ))}
-            </ScrollView>
-            <View className="mb-3 flex-row items-center">
-              <TimeFieldInput containerClassName="flex-1 mr-2 mb-0" label="Start" value={slotStart} onChange={setSlotStart} />
-              <TimeFieldInput containerClassName="flex-1 ml-2 mb-0" label="End" value={slotEnd} onChange={setSlotEnd} />
-            </View>
-            <GradientButton title="Add Slot" variant="outline" onPress={addSlot} style={{ marginBottom: 16, height: 44 }} />
-            <View className="mb-4 flex-row flex-wrap">
-              {slots.map((slot, index) => (
-                <View key={`${slot.day}-${slot.startTime}-${index}`} className="mb-2 mr-2 flex-row items-center rounded-full bg-surface-muted px-3 py-2">
-                  <Text className="mr-2 text-xs text-ink">{slot.day} {slot.startTime}-{slot.endTime}</Text>
-                  <Ionicons name="close-circle" size={16} color={colors.inkFaint} onPress={() => removeSlot(index)} />
-                </View>
-              ))}
-            </View>
+            <Card style={{ marginBottom: 16 }}>
+              <Text className="mb-2 text-xs font-semibold text-ink-soft">Day</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+                {DAYS.map((d) => (
+                  <Chip key={d} label={d} selected={slotDay === d} onPress={() => setSlotDay(d)} />
+                ))}
+              </ScrollView>
+              <View className="flex-row items-center">
+                <TimeFieldInput containerClassName="flex-1 mr-2 mb-0" label="Start" value={slotStart} onChange={setSlotStart} />
+                <Ionicons name="arrow-forward" size={16} color={colors.inkFaint} style={{ marginTop: 20 }} />
+                <TimeFieldInput containerClassName="flex-1 ml-2 mb-0" label="End" value={slotEnd} onChange={setSlotEnd} />
+              </View>
+              <GradientButton title="Add Slot" variant="outline" onPress={addSlot} style={{ height: 44 }} />
+            </Card>
+
+            {slots.length > 0 ? (
+              <View className="mb-4">
+                {DAYS.filter((d) => slots.some((s) => s.day === d)).map((day) => (
+                  <View key={day} className="mb-3">
+                    <Text className="mb-2 text-xs font-bold uppercase text-ink-soft" style={{ letterSpacing: 0.5 }}>
+                      {day}
+                    </Text>
+                    <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+                      {slots.map((slot, index) => slot.day === day && (
+                        <View
+                          key={`${slot.day}-${slot.startTime}-${index}`}
+                          className="flex-row items-center rounded-full bg-brand-teal/10 px-3 py-2"
+                        >
+                          <Ionicons name="time-outline" size={14} color={colors.teal} style={{ marginRight: 6 }} />
+                          <Text className="mr-2 text-xs font-semibold text-ink">{slot.startTime} - {slot.endTime}</Text>
+                          <Pressable onPress={() => removeSlot(index)} hitSlop={8}>
+                            <Ionicons name="close-circle" size={16} color={colors.inkFaint} />
+                          </Pressable>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View className="mb-4 items-center rounded-2xl border border-dashed py-6" style={{ borderColor: colors.line }}>
+                <Ionicons name="calendar-outline" size={22} color={colors.inkFaint} />
+                <Text className="mt-2 text-xs text-ink-soft">No slots added yet</Text>
+              </View>
+            )}
           </>
         )}
 

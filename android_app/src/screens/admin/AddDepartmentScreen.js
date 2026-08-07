@@ -10,11 +10,14 @@ import GradientButton from '../../components/GradientButton';
 import api from '../../utils/apiClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
-export default function AddDepartmentScreen({ navigation }) {
+export default function AddDepartmentScreen({ navigation, route }) {
   const { colors } = useThemeColors();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [keywords, setKeywords] = useState('');
+  const editing = route?.params?.department || null;
+  const isEditMode = !!editing;
+
+  const [name, setName] = useState(editing?.name || '');
+  const [description, setDescription] = useState(editing?.description || '');
+  const [keywords, setKeywords] = useState(editing?.symptomKeywords?.join(', ') || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
@@ -27,14 +30,20 @@ export default function AddDepartmentScreen({ navigation }) {
     }
     setSaving(true);
     try {
-      const { department } = await api.post('/departments', {
+      const payload = {
         name,
         description,
         symptomKeywords: keywords.split(',').map((k) => k.trim()).filter(Boolean),
-      });
-      setSuccess(department);
+      };
+      if (isEditMode) {
+        const { department } = await api.patch(`/departments/${editing._id}`, payload);
+        setSuccess(department);
+      } else {
+        const { department } = await api.post('/departments', payload);
+        setSuccess(department);
+      }
     } catch (err) {
-      setError(err.message || 'Unable to add department');
+      setError(err.message || `Unable to ${isEditMode ? 'update' : 'add'} department`);
     } finally {
       setSaving(false);
     }
@@ -50,15 +59,22 @@ export default function AddDepartmentScreen({ navigation }) {
   if (success) {
     return (
       <SafeAreaView className="flex-1 bg-surface-app">
-        <ScreenHeader title="Department Added" onBack={() => navigation.goBack()} />
+        <ScreenHeader title={isEditMode ? 'Department Updated' : 'Department Added'} onBack={() => navigation.goBack()} />
         <View className="flex-1 px-6 pt-4">
           <Card className="items-center">
             <Ionicons name="checkmark-circle" size={40} color={colors.success} />
             <Text className="mt-2 text-lg font-bold text-ink">{success.name}</Text>
             {success.description ? <Text className="text-xs text-ink-soft">{success.description}</Text> : null}
           </Card>
-          <GradientButton title="Add Another" onPress={resetForm} style={{ marginTop: 24 }} />
-          <GradientButton title="Done" variant="outline" onPress={() => navigation.goBack()} style={{ marginTop: 12 }} />
+          {!isEditMode && (
+            <GradientButton title="Add Another" onPress={resetForm} style={{ marginTop: 24 }} />
+          )}
+          <GradientButton
+            title="Done"
+            variant={isEditMode ? 'solid' : 'outline'}
+            onPress={() => navigation.goBack()}
+            style={{ marginTop: isEditMode ? 24 : 12 }}
+          />
         </View>
       </SafeAreaView>
     );
@@ -66,7 +82,7 @@ export default function AddDepartmentScreen({ navigation }) {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-app">
-      <ScreenHeader title="Add Department" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={isEditMode ? 'Edit Department' : 'Add Department'} onBack={() => navigation.goBack()} />
       <KeyboardAwareScrollView
         className="px-6 pt-2"
         keyboardShouldPersistTaps="handled"
@@ -77,7 +93,12 @@ export default function AddDepartmentScreen({ navigation }) {
         <Input label="Description" value={description} onChangeText={setDescription} />
         <Input label="Symptom Keywords (comma separated)" value={keywords} onChangeText={setKeywords} placeholder="e.g. migraine, seizure" />
         {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
-        <GradientButton title="Add Department" onPress={handleAdd} loading={saving} style={{ marginBottom: 32 }} />
+        <GradientButton
+          title={isEditMode ? 'Save Changes' : 'Add Department'}
+          onPress={handleAdd}
+          loading={saving}
+          style={{ marginBottom: 32 }}
+        />
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );

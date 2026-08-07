@@ -125,7 +125,7 @@ export default function AssignedNursesScreen({ navigation }) {
               {isLocked ? (
                 <View className="mt-3 flex-row items-center">
                   <Ionicons name="lock-closed-outline" size={14} color={colors.inkFaint} />
-                  <Text className="ml-1.5 text-xs text-ink-soft">Token generated — assignment locked</Text>
+                  <Text className="ml-1.5 text-xs text-ink-soft">Token active — assignment locked</Text>
                 </View>
               ) : isEditing ? (
                 <View className="mt-3">

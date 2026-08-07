@@ -48,7 +48,7 @@ export default function PatientHomeScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  const hasUhid = !!user?.uhid;
+  const hasActiveToken = user?.status === 'token_generated';
 
   // Lets a patient tap back into an in-progress appointment and pick up
   // exactly where they left off, instead of only landing on the list.
@@ -86,8 +86,8 @@ export default function PatientHomeScreen({ navigation }) {
       navigation.navigate('Appointments');
       return;
     }
-    if ((action.key === 'symptom' || action.key === 'doctor') && !hasUhid) {
-      navigation.navigate('VitalsPending');
+    if (action.key === 'symptom' && !hasActiveToken) {
+      navigation.navigate('VitalsPending', { expired: user?.status === 'token_expired' });
       return;
     }
     navigation.navigate(action.screen);
@@ -112,17 +112,40 @@ export default function PatientHomeScreen({ navigation }) {
           </View>
         </View>
 
-        <View className="flex-row items-center rounded-2xl border border-line bg-surface mx-5 mt-4 px-4 py-3">
-          <Ionicons name="finger-print-outline" size={16} color={colors.inkSoft} />
-          <Text className="ml-2 text-xs text-ink-soft">MR No {user?.mrNo}</Text>
-          {hasUhid && (
+        <View className="flex-row items-stretch rounded-2xl border border-line bg-surface mx-5 mt-4 px-4 py-3.5">
+          <View className="flex-1 items-center">
+            <Ionicons name="finger-print-outline" size={17} color={colors.inkSoft} />
+            <Text className="mt-1.5 text-[10px] font-semibold uppercase text-ink-faint" style={{ letterSpacing: 0.5 }}>
+              MR No
+            </Text>
+            <Text className="mt-0.5 text-xs font-bold text-ink" numberOfLines={1}>{user?.mrNo}</Text>
+          </View>
+
+          {!!user?.uhid && (
             <>
-              <View className="mx-3 h-4 w-px bg-line" />
-              <Ionicons name="card-outline" size={16} color={colors.inkSoft} />
-              <Text className="ml-2 text-xs text-ink-soft">UHID {user?.uhid}</Text>
-              <View className="mx-3 h-4 w-px bg-line" />
-              <Ionicons name="ticket-outline" size={16} color={colors.inkSoft} />
-              <Text className="ml-2 text-xs text-ink-soft">Token {user?.tokenNo}</Text>
+              <View className="mx-1 w-px bg-line" />
+              <View className="flex-1 items-center">
+                <Ionicons name="card-outline" size={17} color={colors.inkSoft} />
+                <Text className="mt-1.5 text-[10px] font-semibold uppercase text-ink-faint" style={{ letterSpacing: 0.5 }}>
+                  UHID
+                </Text>
+                <Text className="mt-0.5 text-xs font-bold text-ink" numberOfLines={1}>{user?.uhid}</Text>
+              </View>
+
+              <View className="mx-1 w-px bg-line" />
+              <View className="flex-1 items-center">
+                <Ionicons name="ticket-outline" size={17} color={hasActiveToken ? colors.inkSoft : colors.danger} />
+                <Text className="mt-1.5 text-[10px] font-semibold uppercase text-ink-faint" style={{ letterSpacing: 0.5 }}>
+                  Token
+                </Text>
+                <Text
+                  className="mt-0.5 text-xs font-bold"
+                  numberOfLines={1}
+                  style={{ color: hasActiveToken ? colors.ink : colors.danger }}
+                >
+                  {user?.tokenNo}{!hasActiveToken ? ' (expired)' : ''}
+                </Text>
+              </View>
             </>
           )}
         </View>
@@ -192,7 +215,10 @@ export default function PatientHomeScreen({ navigation }) {
         <View className="mx-5 mb-8 mt-5">
           <View className="mb-2 flex-row items-center justify-between">
             <Text className="text-base font-bold text-ink">Departments</Text>
-            <Text className="text-xs font-semibold text-brand-teal" onPress={() => navigation.navigate('Departments')}>
+            <Text
+              className="text-xs font-semibold text-brand-teal"
+              onPress={() => navigation.navigate('Departments')}
+            >
               View All
             </Text>
           </View>

@@ -38,6 +38,10 @@ export const createAppointment = async ({ uhid, purpose, symptoms }, actor) => {
 
   assertCanActOnPatient(patient, actor);
 
+  if (patient.status !== 'token_generated') {
+    throw new ApiError(400, 'Your token has expired. Please visit the reception to get a new token before booking.');
+  }
+
   const match = await matchDepartmentBySymptoms(symptoms, purpose);
 
   const existing = await Appointment.findOne({
@@ -167,6 +171,12 @@ export const recordConsultationNotes = async (appointmentId, { rawImageUrl }, do
   appointment.consultationNotes = { rawImageUrl, recordedAt: new Date() };
   appointment.status = 'completed';
   await appointment.save();
+
+  await Patient.updateOne(
+    { _id: appointment.patientId._id, status: 'token_generated' },
+    { status: 'token_expired', $unset: { assignedNurse: '' } },
+  );
+
   return getAppointmentOr404(appointment._id);
 };
 

@@ -6,6 +6,7 @@ const doctorSchema = new Schema({
   email: { type: String, required: true, unique: true },
   passwordHash: { type: String, required: true },
   phone: String,
+  staffId: { type: String, unique: true, sparse: true },
   departmentId: { type: Schema.Types.ObjectId, ref: 'Department' },
   specialization: String,
   qualifications: String,

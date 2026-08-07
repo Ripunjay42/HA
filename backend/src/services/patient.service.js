@@ -74,7 +74,7 @@ export const assignNurse = async (mrNo, staffId) => {
 
   const patient = await getPatientByMrNo(mrNo);
   if (patient.status === 'token_generated') {
-    throw new ApiError(400, 'Cannot reassign nurse after the token has been generated');
+    throw new ApiError(400, 'Cannot reassign nurse while the token is still active');
   }
   patient.assignedNurse = nurse._id;
   patient.status = 'nurse_assigned';
@@ -85,7 +85,7 @@ export const assignNurse = async (mrNo, staffId) => {
 export const unassignNurse = async (mrNo) => {
   const patient = await getPatientByMrNo(mrNo);
   if (patient.status === 'token_generated') {
-    throw new ApiError(400, 'Cannot unassign nurse after the token has been generated');
+    throw new ApiError(400, 'Cannot unassign nurse while the token is still active');
   }
   patient.assignedNurse = undefined;
   patient.status = 'registered';
@@ -107,8 +107,10 @@ export const recordVitals = async (mrNo, vitals, nurseId) => {
   patient.status = 'vitals_recorded';
   await patient.save();
 
-  patient.uhid = await generateUhid();
-  patient.tokenNo = await generateTokenNo();
+  if (!patient.uhid) {
+    patient.uhid = await generateUhid();
+  }
+  patient.tokenNo = await generateTokenNo(patient._id);
   patient.status = 'token_generated';
   await patient.save();
 

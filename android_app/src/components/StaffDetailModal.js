@@ -184,11 +184,28 @@ export default function StaffDetailModal({ visible, staff, role, onClose, onEdit
 
             {staff.availability?.length > 0 && (
               <View className="mb-3">
-                <Text style={{ fontSize: 11, color: colors.inkSoft, marginBottom: 6 }}>Availability</Text>
+                <View className="mb-2 flex-row items-center">
+                  <Ionicons name="calendar-outline" size={16} color={colors.inkFaint} />
+                  <Text style={{ fontSize: 11, color: colors.inkSoft, marginLeft: 12 }}>Availability</Text>
+                </View>
                 {staff.availability.map((a) => (
-                  <Text key={a.day} style={{ fontSize: 13, color: colors.ink, marginBottom: 2 }}>
-                    {a.day}: {a.slots.map((s) => `${s.startTime}-${s.endTime}`).join(', ')}
-                  </Text>
+                  <View key={a.day} className="mb-2 flex-row items-start">
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.ink, width: 40, marginTop: 6 }}>
+                      {a.day}
+                    </Text>
+                    <View className="flex-1 flex-row flex-wrap" style={{ gap: 6 }}>
+                      {a.slots.map((s, i) => (
+                        <View
+                          key={`${a.day}-${i}`}
+                          className="rounded-full bg-brand-teal/10 px-3 py-1"
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: colors.teal }}>
+                            {s.startTime} - {s.endTime}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
                 ))}
               </View>
             )}

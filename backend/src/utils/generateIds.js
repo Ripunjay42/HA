@@ -53,16 +53,31 @@ export const generateStaffId = async (Model, prefix) => {
   throw new Error('Failed to generate a unique staff ID, please retry');
 };
 
-export const generateTokenNo = async () => {
+// Token No is a same-day queue number. It must stay unique even when a
+// patient's token is regenerated later the same day (e.g. after their
+// earlier token expired post-consultation) -- counting today's vitals
+// records isn't enough for that, since the same patient's own row (or a
+// stale count) can reproduce a number already held by someone else, so the
+// candidate is verified against today's actual tokens and retried on clash.
+export const generateTokenNo = async (excludePatientId) => {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date();
   endOfDay.setHours(23, 59, 59, 999);
 
-  const countToday = await Patient.countDocuments({
+  const todayFilter = {
     tokenNo: { $exists: true, $ne: null },
     'vitals.recordedAt': { $gte: startOfDay, $lte: endOfDay },
-  });
+    ...(excludePatientId ? { _id: { $ne: excludePatientId } } : {}),
+  };
 
-  return `T${String(countToday + 1).padStart(3, '0')}`;
+  const countToday = await Patient.countDocuments(todayFilter);
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate = `T${String(countToday + 1 + attempt).padStart(3, '0')}`;
+    // eslint-disable-next-line no-await-in-loop
+    const clash = await Patient.exists({ ...todayFilter, tokenNo: candidate });
+    if (!clash) return candidate;
+  }
+  throw new Error('Failed to generate a unique token number, please retry');
 };

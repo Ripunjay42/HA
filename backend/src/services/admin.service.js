@@ -5,7 +5,7 @@ import Appointment from '../models/appointment.model.js';
 import Payment from '../models/payment.model.js';
 import ApiError from '../utils/ApiError.js';
 
-const staffIdPrefix = { receptionist: 'RC', nurse: 'NR' };
+const staffIdPrefix = { receptionist: 'RC', nurse: 'NR', doctor: 'DR' };
 
 const getModelOrThrow = (role) => {
   const Model = roleModels[role];
@@ -72,7 +72,7 @@ export const getStaffDocument = async (role, id, documentId) => {
 
 export const updateStaff = async (role, id, data) => {
   const Model = getModelOrThrow(role);
-  const { password, documents, ...rest } = data;
+  const { password, documents, staffId, ...rest } = data;
 
   const staff = await Model.findById(id);
   if (!staff) throw new ApiError(404, 'Staff member not found');

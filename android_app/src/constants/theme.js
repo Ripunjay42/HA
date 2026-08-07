@@ -56,6 +56,7 @@ export const buildPatientStatusColor = (colors) => ({
   nurse_assigned: colors.warning,
   vitals_recorded: colors.teal,
   token_generated: colors.success,
+  token_expired: colors.danger,
 });
 
 export const buildAppointmentStatusColor = (colors) => ({

@@ -53,9 +53,9 @@ export default function PatientVitalsScreen({ navigation, route }) {
           </View>
           <Text className="text-center text-2xl font-bold text-ink">Vitals Recorded</Text>
           <Card className="mt-8 w-full items-center">
-            <Text className="text-xs font-semibold uppercase tracking-wide text-ink-soft">UHID Generated</Text>
+            <Text className="text-xs font-semibold uppercase tracking-wide text-ink-soft">UHID</Text>
             <Text className="mt-2 text-2xl font-extrabold text-brand-teal">{result.uhid}</Text>
-            <Text className="mt-3 text-xs text-ink-soft">Token No: {result.tokenNo}</Text>
+            <Text className="mt-3 text-xs text-ink-soft">New Token No: {result.tokenNo}</Text>
           </Card>
           <GradientButton title="Done" onPress={() => navigation.popToTop()} style={{ width: '100%', marginTop: 32 }} />
         </View>
