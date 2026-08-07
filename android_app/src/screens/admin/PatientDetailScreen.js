@@ -97,8 +97,33 @@ export default function PatientDetailScreen({ navigation, route }) {
           <Text className="mb-2 text-sm font-bold text-ink">Identifiers</Text>
           <Row icon="pricetag-outline" label="MR No" value={patient.mrNo} colors={colors} />
           <Row icon="finger-print-outline" label="UHID" value={patient.uhid} colors={colors} />
-          <Row icon="key-outline" label="Token No" value={patient.tokenNo} colors={colors} />
+          <Row
+            icon="key-outline"
+            label="Token No"
+            value={patient.status === 'token_expired' ? `${patient.tokenNo} (expired)` : patient.tokenNo}
+            colors={colors}
+          />
         </Card>
+
+        {patient.tokenHistory?.length > 0 && (
+          <Card className="mb-4">
+            <Text className="mb-2 text-sm font-bold text-ink">Token History</Text>
+            {[...patient.tokenHistory].reverse().map((entry, index) => (
+              <View
+                key={`${entry.tokenNo}-${entry.expiredAt}`}
+                className={index > 0 ? 'mt-2 pt-2' : ''}
+                style={index > 0 ? { borderTopWidth: 1, borderTopColor: colors.line } : undefined}
+              >
+                <View className="flex-row items-center justify-between">
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink }}>{entry.tokenNo}</Text>
+                  <Text style={{ fontSize: 11, color: colors.inkFaint }}>
+                    {entry.expiredAt ? new Date(entry.expiredAt).toLocaleString() : '—'}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+        )}
 
         <Card className="mb-4">
           <Text className="mb-2 text-sm font-bold text-ink">Registration & Payment</Text>

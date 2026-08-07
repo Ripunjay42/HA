@@ -1,4 +1,5 @@
 import Patient from '../models/patient.model.js';
+import Counter from '../models/counter.model.js';
 
 const randomDigits = (length) =>
   Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
@@ -40,8 +41,6 @@ export const generateUhid = async () => {
   throw new Error('Failed to generate a unique UHID, please retry');
 };
 
-// Token No is a same-day queue number: count how many tokens have already
-// been issued today and take the next number in that sequence.
 // Shared by Receptionist and Nurse onboarding, which both require a unique staffId.
 export const generateStaffId = async (Model, prefix) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -53,31 +52,17 @@ export const generateStaffId = async (Model, prefix) => {
   throw new Error('Failed to generate a unique staff ID, please retry');
 };
 
-// Token No is a same-day queue number. It must stay unique even when a
-// patient's token is regenerated later the same day (e.g. after their
-// earlier token expired post-consultation) -- counting today's vitals
-// records isn't enough for that, since the same patient's own row (or a
-// stale count) can reproduce a number already held by someone else, so the
-// candidate is verified against today's actual tokens and retried on clash.
-export const generateTokenNo = async (excludePatientId) => {
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+// Token No is not tied to a calendar day -- a token can stay active across
+// multiple days (e.g. an appointment booked for a later date), so numbering
+// must never reset daily. A single global counter, incremented atomically
+// via findOneAndUpdate, guarantees every token ever issued is unique across
+// all patients, active or expired, for the lifetime of the deployment.
+export const generateTokenNo = async () => {
+  const counter = await Counter.findOneAndUpdate(
+    { _id: 'tokenNo' },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true },
+  );
 
-  const todayFilter = {
-    tokenNo: { $exists: true, $ne: null },
-    'vitals.recordedAt': { $gte: startOfDay, $lte: endOfDay },
-    ...(excludePatientId ? { _id: { $ne: excludePatientId } } : {}),
-  };
-
-  const countToday = await Patient.countDocuments(todayFilter);
-
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const candidate = `T${String(countToday + 1 + attempt).padStart(3, '0')}`;
-    // eslint-disable-next-line no-await-in-loop
-    const clash = await Patient.exists({ ...todayFilter, tokenNo: candidate });
-    if (!clash) return candidate;
-  }
-  throw new Error('Failed to generate a unique token number, please retry');
+  return `T${String(counter.seq).padStart(5, '0')}`;
 };

@@ -5,6 +5,11 @@ const patientSchema = new Schema({
   mrNo: { type: String, required: true, unique: true },
   uhid: { type: String, unique: true, sparse: true },
   tokenNo: { type: String, sparse: true },
+  tokenHistory: [{
+    tokenNo: String,
+    issuedAt: Date,
+    expiredAt: Date,
+  }],
   name: { type: String, required: true },
   age: Number,
   gender: { type: String, enum: ['male', 'female', 'other'] },

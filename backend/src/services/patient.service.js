@@ -103,6 +103,16 @@ export const recordVitals = async (mrNo, vitals, nurseId) => {
     throw new ApiError(403, 'You are not the nurse assigned to this patient');
   }
 
+  // Archive the outgoing token (if any) before it's overwritten, so a
+  // patient's full token history stays visible even after regeneration.
+  if (patient.tokenNo) {
+    patient.tokenHistory.push({
+      tokenNo: patient.tokenNo,
+      issuedAt: patient.vitals?.recordedAt || patient.updatedAt,
+      expiredAt: new Date(),
+    });
+  }
+
   patient.vitals = { ...vitals, recordedBy: nurseId, recordedAt: new Date() };
   patient.status = 'vitals_recorded';
   await patient.save();
@@ -110,7 +120,7 @@ export const recordVitals = async (mrNo, vitals, nurseId) => {
   if (!patient.uhid) {
     patient.uhid = await generateUhid();
   }
-  patient.tokenNo = await generateTokenNo(patient._id);
+  patient.tokenNo = await generateTokenNo();
   patient.status = 'token_generated';
   await patient.save();
 
