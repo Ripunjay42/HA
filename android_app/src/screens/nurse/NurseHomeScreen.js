@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -94,17 +94,30 @@ export default function NurseHomeScreen({ navigation }) {
             </View>
 
             {item.status === 'token_generated' && item.vitals?.recordedAt ? (
-              <View className="mt-4 rounded-2xl bg-surface-muted p-3">
-                <Text className="text-xs font-semibold text-ink-soft">Vitals already recorded</Text>
-                <Text className="mt-1 text-xs text-ink-soft">
-                  BP {item.vitals.bp} • Temp {item.vitals.temperature} • Pulse {item.vitals.pulse}
-                </Text>
-              </View>
+              <Pressable onPress={() => navigation.navigate('PatientVitals', { mrNo: item.mrNo })}>
+                <View className="mt-4 flex-row items-center justify-between rounded-2xl bg-surface-muted p-3">
+                  <View className="flex-1">
+                    <Text className="text-xs font-semibold text-ink-soft">Vitals recorded • Tap to edit</Text>
+                    <Text className="mt-1 text-xs text-ink-soft">
+                      BP {item.vitals.bp} • Temp {item.vitals.temperature} • Pulse {item.vitals.pulse}
+                    </Text>
+                  </View>
+                  <Ionicons name="create-outline" size={18} color={colors.inkSoft} />
+                </View>
+              </Pressable>
             ) : (
               <GradientButton
                 title={item.vitals?.recordedAt ? 'Record Vitals Again' : 'Record Vitals'}
                 onPress={() => navigation.navigate('PatientVitals', { mrNo: item.mrNo })}
                 style={{ marginTop: 16, height: 44 }}
+              />
+            )}
+            {item.status === 'token_generated' && (
+              <GradientButton
+                title="Book Doctor Appointment"
+                variant="outline"
+                onPress={() => navigation.navigate('NurseSymptomCheck', { mrNo: item.mrNo, uhid: item.uhid })}
+                style={{ marginTop: 12, height: 44 }}
               />
             )}
           </Card>

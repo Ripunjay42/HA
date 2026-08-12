@@ -7,6 +7,7 @@ import Input from '../../components/Input';
 import GradientButton from '../../components/GradientButton';
 import { useAuth } from '../../hooks/AuthContext';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { filterDigits } from '../../utils/validation';
 
 const ROLE_TITLES = {
   patient: 'Patient Sign In',
@@ -59,8 +60,9 @@ export default function LoginScreen({ route, navigation }) {
             <Input
               label="Phone Number"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(v) => setPhone(filterDigits(v))}
               keyboardType="phone-pad"
+              maxLength={10}
               placeholder="10-digit phone number"
             />
             <Input

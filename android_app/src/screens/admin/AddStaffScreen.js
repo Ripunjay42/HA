@@ -12,6 +12,7 @@ import Card from '../../components/Card';
 import GradientButton from '../../components/GradientButton';
 import api from '../../utils/apiClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { filterDigits, filterDecimal, filterAlpha, isValidName } from '../../utils/validation';
 
 const ROLES = ['doctor', 'nurse', 'receptionist'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -89,6 +90,10 @@ export default function AddStaffScreen({ navigation, route }) {
     setError('');
     if (!common.name || !common.email || (!isEditMode && !common.password)) {
       setError('Name, email, and password are required');
+      return;
+    }
+    if (!isValidName(common.name)) {
+      setError('Full name must contain letters only');
       return;
     }
     setLoading(true);
@@ -193,7 +198,7 @@ export default function AddStaffScreen({ navigation, route }) {
           ))}
         </View>
 
-        <Input label="Full Name" value={common.name} onChangeText={setC('name')} />
+        <Input label="Full Name" value={common.name} onChangeText={(v) => setC('name')(filterAlpha(v))} />
         <Input label="Email" value={common.email} onChangeText={setC('email')} autoCapitalize="none" keyboardType="email-address" />
         <Input
           label={isEditMode ? 'Password (leave blank to keep current)' : 'Password'}
@@ -201,7 +206,13 @@ export default function AddStaffScreen({ navigation, route }) {
           onChangeText={setC('password')}
           secureTextEntry
         />
-        <Input label="Phone" value={common.phone} onChangeText={setC('phone')} keyboardType="phone-pad" />
+        <Input
+          label="Phone"
+          value={common.phone}
+          onChangeText={(v) => setC('phone')(filterDigits(v))}
+          keyboardType="phone-pad"
+          maxLength={10}
+        />
 
         {role === 'doctor' && (
           <>
@@ -211,15 +222,25 @@ export default function AddStaffScreen({ navigation, route }) {
                 <Chip key={d._id} label={d.name} selected={departmentId === d._id} onPress={() => setDepartmentId(d._id)} />
               ))}
             </ScrollView>
-            <Input label="Specialization" value={specialization} onChangeText={setSpecialization} />
+            <Input label="Specialization" value={specialization} onChangeText={(v) => setSpecialization(filterAlpha(v))} />
             <Input
               label="Qualifications"
               value={qualifications}
               onChangeText={setQualifications}
               placeholder="e.g. MBBS, MD (Cardiology)"
             />
-            <Input label="Experience (years)" value={experienceYears} onChangeText={setExperienceYears} keyboardType="numeric" />
-            <Input label="Consultation Fee" value={consultationFee} onChangeText={setConsultationFee} keyboardType="numeric" />
+            <Input
+              label="Experience (years)"
+              value={experienceYears}
+              onChangeText={(v) => setExperienceYears(filterDigits(v))}
+              keyboardType="numeric"
+            />
+            <Input
+              label="Consultation Fee"
+              value={consultationFee}
+              onChangeText={(v) => setConsultationFee(filterDecimal(v))}
+              keyboardType="numeric"
+            />
 
             <Text className="mb-2 text-sm font-medium text-ink-soft">Availability</Text>
             <Card style={{ marginBottom: 16 }}>

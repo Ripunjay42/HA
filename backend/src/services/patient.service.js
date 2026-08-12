@@ -21,6 +21,19 @@ const resolvePaymentCategory = async (employerName) => {
 
 export const registerPatient = async (data, { source, registeredBy }) => {
   const { employerName, password, ...patientData } = data;
+
+  if (!/^[0-9]{10}$/.test(patientData.phone || '')) {
+    throw new ApiError(400, 'Phone number must be exactly 10 digits');
+  }
+  if (patientData.emergencyContactPhone) {
+    if (!/^[0-9]{10}$/.test(patientData.emergencyContactPhone)) {
+      throw new ApiError(400, 'Emergency contact number must be exactly 10 digits');
+    }
+    if (patientData.emergencyContactPhone === patientData.phone) {
+      throw new ApiError(400, 'Emergency contact number cannot be the same as the patient\'s phone number');
+    }
+  }
+
   const { companyId, paymentCategory } = await resolvePaymentCategory(employerName);
   const mrNo = await generateMrNo();
 
@@ -93,15 +106,33 @@ export const unassignNurse = async (mrNo) => {
   return patient;
 };
 
-export const recordVitals = async (mrNo, vitals, nurseId) => {
-  const patient = await getPatientByMrNo(mrNo);
-
+const assertAssignedNurse = (patient, nurseId) => {
   // getPatientByMrNo populates assignedNurse into {_id, name, staffId}, so
   // compare against its _id rather than stringifying the whole subdocument.
   const assignedNurseId = patient.assignedNurse?._id || patient.assignedNurse;
   if (!assignedNurseId || String(assignedNurseId) !== String(nurseId)) {
     throw new ApiError(403, 'You are not the nurse assigned to this patient');
   }
+};
+
+// Vitals have already been recorded and a token issued for this visit --
+// correct the reading in place without touching the token or its history.
+export const updateVitals = async (mrNo, vitals, nurseId) => {
+  const patient = await getPatientByMrNo(mrNo);
+  assertAssignedNurse(patient, nurseId);
+
+  if (!patient.vitals?.recordedAt) {
+    throw new ApiError(400, 'No vitals have been recorded yet for this patient');
+  }
+
+  patient.vitals = { ...patient.vitals.toObject(), ...vitals, recordedBy: nurseId, recordedAt: new Date() };
+  await patient.save();
+  return patient;
+};
+
+export const recordVitals = async (mrNo, vitals, nurseId) => {
+  const patient = await getPatientByMrNo(mrNo);
+  assertAssignedNurse(patient, nurseId);
 
   // Archive the outgoing token (if any) before it's overwritten, so a
   // patient's full token history stays visible even after regeneration.

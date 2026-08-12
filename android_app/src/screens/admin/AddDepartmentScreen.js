@@ -9,6 +9,7 @@ import Card from '../../components/Card';
 import GradientButton from '../../components/GradientButton';
 import api from '../../utils/apiClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { filterAlpha } from '../../utils/validation';
 
 export default function AddDepartmentScreen({ navigation, route }) {
   const { colors } = useThemeColors();
@@ -89,7 +90,12 @@ export default function AddDepartmentScreen({ navigation, route }) {
         bottomOffset={40}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <Input label="Department Name" value={name} onChangeText={setName} placeholder="e.g. Neurology" />
+        <Input
+          label="Department Name"
+          value={name}
+          onChangeText={(v) => setName(filterAlpha(v))}
+          placeholder="e.g. Neurology"
+        />
         <Input label="Description" value={description} onChangeText={setDescription} />
         <Input label="Symptom Keywords (comma separated)" value={keywords} onChangeText={setKeywords} placeholder="e.g. migraine, seizure" />
         {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}

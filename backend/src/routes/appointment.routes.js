@@ -18,7 +18,7 @@ router.get('/:id/slots', getAvailableSlots);
 
 router.patch('/:id/doctor', authorize('patient', 'nurse'), selectDoctor);
 router.patch('/:id/slot', authorize('patient', 'nurse'), selectSlot);
-router.post('/:id/pay', authorize('patient'), pay);
+router.post('/:id/pay', authorize('patient', 'nurse'), pay);
 router.patch('/:id/consultation-notes', authorize('doctor'), recordConsultationNotes);
 
 export default router;

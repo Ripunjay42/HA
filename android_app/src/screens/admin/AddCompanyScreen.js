@@ -9,6 +9,7 @@ import Card from '../../components/Card';
 import GradientButton from '../../components/GradientButton';
 import api from '../../utils/apiClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { filterAlpha } from '../../utils/validation';
 
 export default function AddCompanyScreen({ navigation, route }) {
   const { colors } = useThemeColors();
@@ -85,7 +86,12 @@ export default function AddCompanyScreen({ navigation, route }) {
         <Text className="mb-4 -mt-1 text-xs text-ink-soft">
           A patient whose employer matches a company here is automatically classified Non-Payment.
         </Text>
-        <Input label="Company Name" value={name} onChangeText={setName} placeholder="e.g. Acme Industries" />
+        <Input
+          label="Company Name"
+          value={name}
+          onChangeText={(v) => setName(filterAlpha(v))}
+          placeholder="e.g. Acme Industries"
+        />
         <Input label="Code (optional)" value={code} onChangeText={setCode} placeholder="e.g. ACM001" />
         {error ? <Text className="mb-4 text-sm text-status-danger">{error}</Text> : null}
         <GradientButton

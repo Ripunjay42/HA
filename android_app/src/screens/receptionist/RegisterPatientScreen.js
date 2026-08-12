@@ -12,6 +12,7 @@ import Card from '../../components/Card';
 import GradientButton from '../../components/GradientButton';
 import api from '../../utils/apiClient';
 import { companyOptions, staffOptions } from '../../utils/pickerOptions';
+import { filterDigits, filterAlpha, isValidPhone, isValidName } from '../../utils/validation';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 const GENDERS = ['male', 'female', 'other'];
@@ -19,7 +20,7 @@ const GENDERS = ['male', 'female', 'other'];
 export default function RegisterPatientScreen({ navigation }) {
   const { colors } = useThemeColors();
   const [form, setForm] = useState({
-    name: '', age: '', gender: 'male', phone: '', password: '', address: '', guardianName: '', employerName: '',
+    name: '', age: '', gender: 'male', phone: '', password: '', address: '', guardianName: '', emergencyContactPhone: '', employerName: '',
   });
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -43,6 +44,22 @@ export default function RegisterPatientScreen({ navigation }) {
     setError('');
     if (!form.name || !form.age || !form.phone || !form.password) {
       setError('Name, age, phone, and password are required');
+      return;
+    }
+    if (!isValidName(form.name)) {
+      setError('Full name must contain letters only');
+      return;
+    }
+    if (!isValidPhone(form.phone)) {
+      setError('Phone number must be exactly 10 digits');
+      return;
+    }
+    if (form.emergencyContactPhone && !isValidPhone(form.emergencyContactPhone)) {
+      setError('Emergency contact number must be exactly 10 digits');
+      return;
+    }
+    if (form.emergencyContactPhone && form.emergencyContactPhone === form.phone) {
+      setError('Emergency contact number cannot be the same as the patient\'s phone number');
       return;
     }
     setLoading(true);
@@ -129,8 +146,20 @@ export default function RegisterPatientScreen({ navigation }) {
           title="New Patient Registration"
           subtitle="Enter the walk-in patient's details to generate their MR No."
         />
-        <Input label="Full Name" value={form.name} onChangeText={set('name')} placeholder="Jane Doe" />
-        <Input label="Age" value={form.age} onChangeText={set('age')} keyboardType="number-pad" placeholder="30" />
+        <Input
+          label="Full Name"
+          value={form.name}
+          onChangeText={(v) => set('name')(filterAlpha(v))}
+          placeholder="Jane Doe"
+        />
+        <Input
+          label="Age"
+          value={form.age}
+          onChangeText={(v) => set('age')(filterDigits(v))}
+          keyboardType="number-pad"
+          maxLength={3}
+          placeholder="30"
+        />
 
         <Text className="mb-2 text-sm font-medium text-ink-soft">Gender</Text>
         <View className="mb-4 flex-row">
@@ -139,7 +168,14 @@ export default function RegisterPatientScreen({ navigation }) {
           ))}
         </View>
 
-        <Input label="Phone Number" value={form.phone} onChangeText={set('phone')} keyboardType="phone-pad" />
+        <Input
+          label="Phone Number"
+          value={form.phone}
+          onChangeText={(v) => set('phone')(filterDigits(v))}
+          keyboardType="phone-pad"
+          maxLength={10}
+          placeholder="10-digit phone number"
+        />
         <Input
           label="Password"
           value={form.password}
@@ -148,7 +184,19 @@ export default function RegisterPatientScreen({ navigation }) {
           placeholder="Set a password for the patient"
         />
         <Input label="Address" value={form.address} onChangeText={set('address')} />
-        <Input label="Guardian / Emergency Contact" value={form.guardianName} onChangeText={set('guardianName')} />
+        <Input
+          label="Guardian Name"
+          value={form.guardianName}
+          onChangeText={(v) => set('guardianName')(filterAlpha(v))}
+        />
+        <Input
+          label="Emergency Contact Number"
+          value={form.emergencyContactPhone}
+          onChangeText={(v) => set('emergencyContactPhone')(filterDigits(v))}
+          keyboardType="phone-pad"
+          maxLength={10}
+          placeholder="10-digit phone number"
+        />
         <PickerInput
           label="Employer Name (optional)"
           value={form.employerName}

@@ -44,3 +44,8 @@ export const recordVitals = asyncHandler(async (req, res) => {
   const patient = await patientService.recordVitals(req.params.mrNo, req.body, req.user.id);
   res.status(200).json({ status: 'ok', patient });
 });
+
+export const updateVitals = asyncHandler(async (req, res) => {
+  const patient = await patientService.updateVitals(req.params.mrNo, req.body, req.user.id);
+  res.status(200).json({ status: 'ok', patient });
+});

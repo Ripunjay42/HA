@@ -17,6 +17,7 @@ const patientSchema = new Schema({
   passwordHash: { type: String, required: true },
   address: String,
   guardianName: String,
+  emergencyContactPhone: String,
   registrationSource: {
     type: String, enum: ['self', 'receptionist'], default: 'self',
   },

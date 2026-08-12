@@ -18,9 +18,9 @@ const getAppointmentOr404 = async (id) => {
   return appointment;
 };
 
-// Nurses may act on behalf of a patient for every step except vitals and
-// payment; this checks the caller is either the patient themselves or the
-// nurse assigned to them, per the spec's "nurse can assist" rule.
+// Nurses may act on behalf of their assigned patient for every booking step,
+// including payment; this checks the caller is either the patient themselves
+// or the nurse assigned to them, per the spec's "nurse can assist" rule.
 const assertCanActOnPatient = (patient, actor) => {
   if (actor.role === 'patient' && String(patient._id) === String(actor.id)) return;
   if (actor.role === 'nurse' && String(patient.assignedNurse) === String(actor.id)) return;
@@ -122,12 +122,8 @@ export const selectSlot = async (appointmentId, { day, date, startTime, endTime 
 };
 
 export const payForAppointment = async (appointmentId, { paymentMethod, transactionId }, actor) => {
-  if (actor.role !== 'patient') throw new ApiError(403, 'Only the patient can make payment');
-
   const appointment = await getAppointmentOr404(appointmentId);
-  if (String(appointment.patientId._id) !== String(actor.id)) {
-    throw new ApiError(403, 'You are not authorized to pay for this appointment');
-  }
+  assertCanActOnPatient(appointment.patientId, actor);
   if (appointment.status !== 'pending_payment') {
     throw new ApiError(400, 'This appointment is not awaiting payment');
   }
