@@ -84,13 +84,35 @@ export default function NurseHomeScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <Card className="mb-3">
-            <Text className="text-lg font-bold text-ink">{item.name}</Text>
-            <Text className="text-xs text-ink-soft">
-              {item.age} yrs • {item.gender} • {item.phone}
-            </Text>
-            <Text className="mt-1 text-xs text-ink-soft">MR No: {item.mrNo}</Text>
-            <View className="mt-3 self-start">
-              <StatusBadge status={item.status} color={patientStatusColor[item.status]} />
+            <View className="flex-row items-start justify-between">
+              <View className="flex-1 pr-3">
+                <Text className="text-lg font-bold text-ink">{item.name}</Text>
+                <Text className="text-xs text-ink-soft">
+                  {item.age} yrs • {item.gender} • {item.phone}
+                </Text>
+                <Text className="mt-1 text-xs text-ink-soft">MR No: {item.mrNo}</Text>
+                <View className="mt-3 self-start">
+                  <StatusBadge status={item.status} color={patientStatusColor[item.status]} />
+                </View>
+              </View>
+              <View style={{ gap: 8, minWidth: 130 }}>
+                {item.status === 'token_generated' && (
+                  <GradientButton
+                    title="Book Appointment"
+                    variant="outline"
+                    onPress={() => navigation.navigate('NurseSymptomCheck', { mrNo: item.mrNo, uhid: item.uhid })}
+                    style={{ height: 38 }}
+                  />
+                )}
+                {item.uhid && (
+                  <GradientButton
+                    title="View Appointments"
+                    variant="outline"
+                    onPress={() => navigation.navigate('NurseAppointments', { uhid: item.uhid, patientName: item.name })}
+                    style={{ height: 38 }}
+                  />
+                )}
+              </View>
             </View>
 
             {item.status === 'token_generated' && item.vitals?.recordedAt ? (
@@ -110,14 +132,6 @@ export default function NurseHomeScreen({ navigation }) {
                 title={item.vitals?.recordedAt ? 'Record Vitals Again' : 'Record Vitals'}
                 onPress={() => navigation.navigate('PatientVitals', { mrNo: item.mrNo })}
                 style={{ marginTop: 16, height: 44 }}
-              />
-            )}
-            {item.status === 'token_generated' && (
-              <GradientButton
-                title="Book Doctor Appointment"
-                variant="outline"
-                onPress={() => navigation.navigate('NurseSymptomCheck', { mrNo: item.mrNo, uhid: item.uhid })}
-                style={{ marginTop: 12, height: 44 }}
               />
             )}
           </Card>

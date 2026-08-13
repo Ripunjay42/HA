@@ -7,6 +7,7 @@ import NurseDoctorListScreen from '../screens/nurse/NurseDoctorListScreen';
 import NurseBookSlotScreen from '../screens/nurse/NurseBookSlotScreen';
 import NursePaymentScreen from '../screens/nurse/NursePaymentScreen';
 import NurseConfirmationScreen from '../screens/nurse/NurseConfirmationScreen';
+import NurseAppointmentsScreen from '../screens/nurse/NurseAppointmentsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,6 +22,7 @@ export default function NurseNavigator() {
       <Stack.Screen name="NurseBookSlot" component={NurseBookSlotScreen} />
       <Stack.Screen name="NursePayment" component={NursePaymentScreen} />
       <Stack.Screen name="NurseConfirmation" component={NurseConfirmationScreen} />
+      <Stack.Screen name="NurseAppointments" component={NurseAppointmentsScreen} />
     </Stack.Navigator>
   );
 }

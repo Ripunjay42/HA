@@ -57,9 +57,18 @@ export default function NurseConfirmationScreen({ navigation, route }) {
         </Card>
 
         <GradientButton
+          title="View Appointments"
+          variant="outline"
+          onPress={() => navigation.navigate('NurseAppointments', {
+            uhid: appointment.patientId?.uhid,
+            patientName: appointment.patientId?.name,
+          })}
+          style={{ width: '100%', marginTop: 12 }}
+        />
+        <GradientButton
           title="Back to Patients"
           onPress={() => navigation.popToTop()}
-          style={{ width: '100%', marginTop: 32 }}
+          style={{ width: '100%', marginTop: 12 }}
         />
       </View>
     </SafeAreaView>

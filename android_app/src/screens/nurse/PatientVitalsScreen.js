@@ -37,9 +37,22 @@ export default function PatientVitalsScreen({ navigation, route }) {
 
   useEffect(() => {
     api.get(`/patients/mr/${mrNo}`).then((res) => {
-      const { vitals } = res.patient;
-      if (vitals?.recordedAt) {
+      const { vitals, status } = res.patient;
+      // nurse_assigned means re-assigned after token expiry — must go through
+      // recordVitals (not updateVitals) to regenerate the token.
+      const isReassigned = status === 'nurse_assigned';
+      if (vitals?.recordedAt && !isReassigned) {
         setIsEditMode(true);
+        setForm({
+          weight: vitals.weight != null ? String(vitals.weight) : '',
+          bp: vitals.bp || '',
+          temperature: vitals.temperature != null ? String(vitals.temperature) : '',
+          height: vitals.height != null ? String(vitals.height) : '',
+          pulse: vitals.pulse != null ? String(vitals.pulse) : '',
+          bloodGroup: vitals.bloodGroup || 'O+',
+        });
+      } else if (vitals?.recordedAt && isReassigned) {
+        // Pre-fill from previous visit for convenience but treat as fresh recording
         setForm({
           weight: vitals.weight != null ? String(vitals.weight) : '',
           bp: vitals.bp || '',
