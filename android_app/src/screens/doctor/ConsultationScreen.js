@@ -18,7 +18,6 @@ export default function ConsultationScreen({ navigation, route }) {
   const { appointmentId } = route.params;
   const { colors, appointmentStatusColor } = useThemeColors();
   const [appointment, setAppointment] = useState(null);
-  const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -83,7 +82,7 @@ export default function ConsultationScreen({ navigation, route }) {
     setSaving(true);
     try {
       const { appointment: updated } = await api.patch(`/appointments/${appointmentId}/consultation-notes`, {
-        rawImageUrl: notes,
+        rawImageUrl: recognizedText,
         ...(prescriptionImage ? { prescriptionImageBase64: prescriptionImage.base64, prescriptionText: recognizedText } : {}),
       });
       setAppointment(updated);
@@ -131,25 +130,58 @@ export default function ConsultationScreen({ navigation, route }) {
         </Card>
 
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-bold text-ink">Vitals</Text>
-          <Text className="text-xs text-ink-soft">Weight: {vitals.weight ?? '—'} kg</Text>
-          <Text className="text-xs text-ink-soft">BP: {vitals.bp ?? '—'}</Text>
-          <Text className="text-xs text-ink-soft">Temperature: {vitals.temperature ?? '—'} °F</Text>
-          <Text className="text-xs text-ink-soft">Height: {vitals.height ?? '—'} cm</Text>
-          <Text className="text-xs text-ink-soft">Pulse: {vitals.pulse ?? '—'} bpm</Text>
-          <Text className="text-xs text-ink-soft">Blood Group: {vitals.bloodGroup ?? '—'}</Text>
+          <Text className="mb-3 text-sm font-bold text-ink">Vitals</Text>
+          <View className="flex-row flex-wrap">
+            {[
+              ['Weight', vitals.weight != null ? `${vitals.weight} kg` : '—'],
+              ['BP', vitals.bp ?? '—'],
+              ['Temp', vitals.temperature != null ? `${vitals.temperature} °F` : '—'],
+              ['Height', vitals.height != null ? `${vitals.height} cm` : '—'],
+              ['Pulse', vitals.pulse != null ? `${vitals.pulse} bpm` : '—'],
+              ['Blood Grp', vitals.bloodGroup ?? '—'],
+            ].map(([label, value]) => (
+              <View key={label} className="mb-3" style={{ width: '33.33%' }}>
+                <Text className="text-xs text-ink-soft">{label}</Text>
+                <Text className="mt-0.5 text-base font-semibold text-ink">{value}</Text>
+              </View>
+            ))}
+          </View>
         </Card>
 
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-bold text-ink">Purpose & Symptoms</Text>
-          <Text className="text-xs text-ink-soft">{appointment.purpose || '—'}</Text>
-          <Text className="mt-1 text-xs text-ink-soft">
-            {appointment.symptoms?.length ? appointment.symptoms.join(', ') : 'No symptoms recorded'}
-          </Text>
+          <Text className="mb-3 text-sm font-bold text-ink">Purpose & Symptoms</Text>
+          <View className="flex-row">
+            <View className="flex-1 pr-2">
+              <Text className="text-xs text-ink-soft">Purpose</Text>
+              <Text className="mt-0.5 text-base text-ink">{appointment.purpose || '—'}</Text>
+            </View>
+            <View className="flex-1 pl-2">
+              <Text className="text-xs text-ink-soft">Symptoms</Text>
+              <Text className="mt-0.5 text-base text-ink">
+                {appointment.symptoms?.length ? appointment.symptoms.join(', ') : '—'}
+              </Text>
+            </View>
+          </View>
         </Card>
 
-        {!appointment.consultationNotes?.recordedAt && (
-          <Card className="mb-4">
+        {appointment.prescriptionDetails?.recordedAt ? (
+          <Card className="mb-6">
+            <Text className="mb-2 text-sm font-bold text-ink">Prescription Details</Text>
+            <Pressable onPress={() => setViewingSavedImage(true)} className="mb-3">
+              <View
+                className="items-center justify-center rounded-2xl bg-surface-muted"
+                style={{ height: 160 }}
+              >
+                <Ionicons name="image-outline" size={28} color={colors.inkSoft} />
+                <Text className="mt-2 text-xs font-semibold text-ink-soft">Tap to view prescription image</Text>
+              </View>
+            </Pressable>
+            <Text className="text-xs text-ink-soft">
+              {appointment.prescriptionDetails.recognizedText || 'No recognized text saved.'}
+            </Text>
+          </Card>
+        ) : (
+          <Card className="mb-6">
             <Text className="mb-2 text-sm font-bold text-ink">Prescription Details</Text>
             <Text className="mb-3 text-xs text-ink-soft">
               Photograph or attach your handwritten prescription — we'll recognize the text automatically.
@@ -202,7 +234,7 @@ export default function ConsultationScreen({ navigation, route }) {
                   placeholder="Recognized prescription text will appear here"
                   placeholderTextColor={colors.inkFaint}
                   multiline
-                  className="h-24 rounded-2xl border border-line bg-surface p-3 text-sm text-ink"
+                  className="h-56 rounded-2xl border border-line bg-surface p-3 text-sm text-ink"
                   style={{ fontFamily: 'Ubuntu_400Regular' }}
                   textAlignVertical="top"
                 />
@@ -222,59 +254,22 @@ export default function ConsultationScreen({ navigation, route }) {
                 </Pressable>
               </>
             ) : null}
+
+            {requiresVerification && !prescriptionVerified ? (
+              <Text className="mt-3 text-xs text-status-warning">
+                Check "I have verified this prescription is accurate" above to enable submission.
+              </Text>
+            ) : null}
+            {error ? <Text className="mt-2 text-sm text-status-danger">{error}</Text> : null}
+            <GradientButton
+              title="Complete Consultation"
+              onPress={handleComplete}
+              loading={saving}
+              disabled={!canComplete}
+              style={{ marginTop: 16 }}
+            />
           </Card>
         )}
-
-        {appointment.prescriptionDetails?.recordedAt ? (
-          <Card className="mb-4">
-            <Text className="mb-2 text-sm font-bold text-ink">Prescription Details</Text>
-            <Pressable onPress={() => setViewingSavedImage(true)} className="mb-3">
-              <View
-                className="items-center justify-center rounded-2xl bg-surface-muted"
-                style={{ height: 160 }}
-              >
-                <Ionicons name="image-outline" size={28} color={colors.inkSoft} />
-                <Text className="mt-2 text-xs font-semibold text-ink-soft">Tap to view prescription image</Text>
-              </View>
-            </Pressable>
-            <Text className="text-xs text-ink-soft">
-              {appointment.prescriptionDetails.recognizedText || 'No recognized text saved.'}
-            </Text>
-          </Card>
-        ) : null}
-
-        <Card className="mb-6">
-          <Text className="mb-2 text-sm font-bold text-ink">Consultation Notes</Text>
-          {appointment.consultationNotes?.recordedAt ? (
-            <Text className="text-xs text-ink-soft">{appointment.consultationNotes.rawImageUrl}</Text>
-          ) : (
-            <>
-              <TextInput
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Enter consultation notes"
-                placeholderTextColor={colors.inkFaint}
-                multiline
-                className="h-28 rounded-2xl border border-line bg-surface p-3 text-sm text-ink"
-                style={{ fontFamily: 'Ubuntu_400Regular' }}
-                textAlignVertical="top"
-              />
-              {requiresVerification && !prescriptionVerified ? (
-                <Text className="mt-2 text-xs text-status-warning">
-                  Check "I have verified this prescription is accurate" above to enable submission.
-                </Text>
-              ) : null}
-              {error ? <Text className="mt-2 text-sm text-status-danger">{error}</Text> : null}
-              <GradientButton
-                title="Complete Consultation"
-                onPress={handleComplete}
-                loading={saving}
-                disabled={!canComplete}
-                style={{ marginTop: 16 }}
-              />
-            </>
-          )}
-        </Card>
       </KeyboardAwareScrollView>
 
       {viewingSavedImage && (
