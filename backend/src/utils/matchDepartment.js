@@ -23,13 +23,22 @@ const matchDepartmentByKeywords = (departments, searchText) => {
 // lets non-keyword phrasing (e.g. "my knee hurts when I climb stairs") match
 // Orthopedics even without a literal "knee pain" keyword on file.
 const matchDepartmentByAi = async (departments, purpose, symptoms) => {
-  const catalog = departments.map((d) => ({ id: String(d._id), name: d.name, description: d.description || '' }));
+  const catalog = departments.map((d) => ({
+    id: String(d._id),
+    name: d.name,
+    description: d.description || '',
+    knownSymptoms: d.symptomKeywords || [],
+  }));
 
   const reply = await chatComplete([
     {
       role: 'system',
       content: 'You are a hospital triage assistant. Given a patient\'s purpose of visit and symptoms, '
-        + 'pick the single most appropriate department from the provided list. '
+        + 'pick the single most appropriate department from the provided list, using each department\'s '
+        + '"knownSymptoms" as the strongest signal for what it treats. Match based on the actual body part or '
+        + 'system affected -- e.g. skin, hair, nails, or rashes belong to a dermatology-type department, NOT an '
+        + 'ear/nose/throat department, even if the word "head" or "hair" appears. Only pick an ENT-type '
+        + 'department for symptoms actually about ears, nose, throat, sinus, or hearing. '
         + 'Reply with ONLY the department "id" value from the list, and nothing else. '
         + 'If none of the departments are a reasonable match, reply with exactly: none',
     },
