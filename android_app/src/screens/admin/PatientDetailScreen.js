@@ -201,12 +201,6 @@ export default function PatientDetailScreen({ navigation, route }) {
                           Consultation completed
                         </Text>
                       </View>
-                      <Row
-                        icon="document-text-outline"
-                        label="Consultation Notes"
-                        value={appt.consultationNotes?.rawImageUrl}
-                        colors={colors}
-                      />
                       {appt.prescriptionDetails?.recordedAt && (
                         <View className="mt-2">
                           <Row
