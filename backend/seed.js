@@ -82,6 +82,24 @@ const run = async () => {
       qualifications: 'MS Ortho', experienceYears: 10, consultationFee: 400,
       availability: availabilityForAllDays(),
     },
+    {
+      name: 'Dr. Kavita Reddy', email: 'doctor4@has.local', passwordHash: 'Doctor@123',
+      staffId: 'DR00004', departmentId: deptByName.ENT, specialization: 'ENT Surgeon',
+      qualifications: 'MS ENT', experienceYears: 9, consultationFee: 350,
+      availability: availabilityForAllDays(),
+    },
+    {
+      name: 'Dr. Sanjay Iyer', email: 'doctor5@has.local', passwordHash: 'Doctor@123',
+      staffId: 'DR00005', departmentId: deptByName.Dermatology, specialization: 'Dermatologist',
+      qualifications: 'MD Dermatology', experienceYears: 7, consultationFee: 350,
+      availability: availabilityForAllDays(),
+    },
+    {
+      name: 'Dr. Neha Kapoor', email: 'doctor6@has.local', passwordHash: 'Doctor@123',
+      staffId: 'DR00006', departmentId: deptByName.Pediatrics, specialization: 'Pediatrician',
+      qualifications: 'MD Pediatrics', experienceYears: 11, consultationFee: 400,
+      availability: availabilityForAllDays(),
+    },
   ];
 
   for (const doctor of doctors) {
