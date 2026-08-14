@@ -9,7 +9,7 @@ import { useAuth } from '../../hooks/AuthContext';
 import api from '../../utils/apiClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
-function DoctorDetailModal({ doctor, canBook, selecting, onClose, onBook, colors, isDark }) {
+function DoctorDetailModal({ doctor, canBook, selecting, onClose, onBook, colors, isDark, isRecommended }) {
   if (!doctor) return null;
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -33,6 +33,12 @@ function DoctorDetailModal({ doctor, canBook, selecting, onClose, onBook, colors
                 <Ionicons name="person" size={26} color={colors.ink} />
               </View>
               <View className="flex-1">
+                {isRecommended ? (
+                  <View className="mb-1 flex-row items-center self-start rounded-full bg-brand-teal/10 px-2 py-0.5">
+                    <Ionicons name="sparkles" size={10} color={colors.teal} />
+                    <Text className="ml-1 text-[10px] font-bold text-brand-teal">AI RECOMMENDED</Text>
+                  </View>
+                ) : null}
                 <Text style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}>{doctor.name}</Text>
                 <Text style={{ fontSize: 12, color: colors.inkSoft }}>{doctor.specialization || 'General'}</Text>
               </View>
@@ -76,7 +82,7 @@ function DoctorDetailModal({ doctor, canBook, selecting, onClose, onBook, colors
 }
 
 export default function DoctorListScreen({ navigation, route }) {
-  const { departmentId, departmentName, appointmentId, matched } = route.params;
+  const { departmentId, departmentName, appointmentId, matched, recommendedDoctorId } = route.params;
   const { user } = useAuth();
   const { colors, isDark } = useThemeColors();
 
@@ -93,8 +99,16 @@ export default function DoctorListScreen({ navigation, route }) {
   const canBook = user?.status === 'token_generated';
 
   useEffect(() => {
-    api.get(`/doctors?departmentId=${departmentId}`).then((res) => setDoctors(res.doctors)).finally(() => setLoading(false));
-  }, [departmentId]);
+    api.get(`/doctors?departmentId=${departmentId}`).then((res) => {
+      const list = res.doctors;
+      if (!recommendedDoctorId) {
+        setDoctors(list);
+        return;
+      }
+      const recommended = list.find((d) => d._id === recommendedDoctorId);
+      setDoctors(recommended ? [recommended, ...list.filter((d) => d._id !== recommendedDoctorId)] : list);
+    }).finally(() => setLoading(false));
+  }, [departmentId, recommendedDoctorId]);
 
   const handleSelect = async (doctor) => {
     setError('');
@@ -138,21 +152,33 @@ export default function DoctorListScreen({ navigation, route }) {
           ListEmptyComponent={
             <Text className="mt-8 text-center text-sm text-ink-soft">No doctors available in this department yet.</Text>
           }
-          renderItem={({ item }) => (
-            <Pressable onPress={() => setViewingDoctor(item)}>
-              <Card className="mb-3 flex-row items-center">
-                <View className="mr-4 h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
-                  <Ionicons name="person" size={26} color={colors.ink} />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-base font-bold text-ink">{item.name}</Text>
-                  <Text className="text-xs text-ink-soft">{item.specialization || 'General'}</Text>
-                  <Text className="mt-1 text-xs font-semibold text-brand-teal">₹{item.consultationFee} consultation</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
-              </Card>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            const isRecommended = item._id === recommendedDoctorId;
+            return (
+              <Pressable onPress={() => setViewingDoctor(item)}>
+                <Card
+                  className="mb-3 flex-row items-center"
+                  style={isRecommended ? { borderColor: colors.teal, borderWidth: 1.5 } : undefined}
+                >
+                  <View className="mr-4 h-14 w-14 items-center justify-center rounded-full bg-surface-muted">
+                    <Ionicons name="person" size={26} color={colors.ink} />
+                  </View>
+                  <View className="flex-1">
+                    {isRecommended ? (
+                      <View className="mb-1 flex-row items-center self-start rounded-full bg-brand-teal/10 px-2 py-0.5">
+                        <Ionicons name="sparkles" size={10} color={colors.teal} />
+                        <Text className="ml-1 text-[10px] font-bold text-brand-teal">AI RECOMMENDED</Text>
+                      </View>
+                    ) : null}
+                    <Text className="text-base font-bold text-ink">{item.name}</Text>
+                    <Text className="text-xs text-ink-soft">{item.specialization || 'General'}</Text>
+                    <Text className="mt-1 text-xs font-semibold text-brand-teal">₹{item.consultationFee} consultation</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
+                </Card>
+              </Pressable>
+            );
+          }}
         />
       )}
 
@@ -164,6 +190,7 @@ export default function DoctorListScreen({ navigation, route }) {
         onBook={isBooking ? handleSelect : null}
         colors={colors}
         isDark={isDark}
+        isRecommended={viewingDoctor?._id === recommendedDoctorId}
       />
     </SafeAreaView>
   );

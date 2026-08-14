@@ -2,6 +2,7 @@ import express from 'express';
 import {
   createAppointment, getAppointment, selectDoctor, getAvailableSlots, selectSlot,
   pay, getMine, getForUhid, getDoctorAppointments, recordConsultationNotes,
+  recognizePrescription, getPrescriptionImage,
 } from '../controllers/appointment.controller.js';
 import { authenticate, authorize } from '../middlewares/auth.js';
 
@@ -20,5 +21,7 @@ router.patch('/:id/doctor', authorize('patient', 'nurse'), selectDoctor);
 router.patch('/:id/slot', authorize('patient', 'nurse'), selectSlot);
 router.post('/:id/pay', authorize('patient', 'nurse'), pay);
 router.patch('/:id/consultation-notes', authorize('doctor'), recordConsultationNotes);
+router.post('/:id/prescription/recognize', authorize('doctor'), recognizePrescription);
+router.get('/:id/prescription/image', authorize('doctor', 'patient', 'nurse', 'admin'), getPrescriptionImage);
 
 export default router;

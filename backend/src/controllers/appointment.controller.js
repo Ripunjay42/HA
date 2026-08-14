@@ -63,3 +63,13 @@ export const recordConsultationNotes = asyncHandler(async (req, res) => {
   );
   res.status(200).json({ status: 'ok', appointment });
 });
+
+export const recognizePrescription = asyncHandler(async (req, res) => {
+  const result = await appointmentService.recognizePrescription(req.params.id, req.body, req.user.id);
+  res.status(200).json({ status: 'ok', ...result });
+});
+
+export const getPrescriptionImage = asyncHandler(async (req, res) => {
+  const image = await appointmentService.getPrescriptionImage(req.params.id);
+  res.status(200).set('Content-Type', image.contentType || 'image/jpeg').send(image.data);
+});

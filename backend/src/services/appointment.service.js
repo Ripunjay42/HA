@@ -3,19 +3,31 @@ import Doctor from '../models/doctor.model.js';
 import Payment from '../models/payment.model.js';
 import Patient from '../models/patient.model.js';
 import { matchDepartmentBySymptoms } from '../utils/matchDepartment.js';
+import { recognizeHandwriting } from '../utils/nimOcrClient.js';
 import ApiError from '../utils/ApiError.js';
 
 const POPULATE_FIELDS = [
   { path: 'patientId', select: '-passwordHash' },
   { path: 'matchedDepartment' },
   { path: 'matchedDoctors', select: '-passwordHash -documents.data' },
+  { path: 'recommendedDoctor', select: '-passwordHash -documents.data' },
   { path: 'selectedDoctor', select: '-passwordHash -documents.data' },
 ];
 
+// Excludes the prescription's raw image bytes from normal reads -- callers
+// that need the actual image fetch it separately via its own endpoint.
 const getAppointmentOr404 = async (id) => {
-  const appointment = await Appointment.findById(id).populate(POPULATE_FIELDS);
+  const appointment = await Appointment.findById(id)
+    .select('-prescriptionDetails.image.data')
+    .populate(POPULATE_FIELDS);
   if (!appointment) throw new ApiError(404, 'Appointment not found');
   return appointment;
+};
+
+export const getPrescriptionImage = async (appointmentId) => {
+  const appointment = await Appointment.findById(appointmentId).select('prescriptionDetails.image');
+  if (!appointment?.prescriptionDetails?.image?.data) throw new ApiError(404, 'Prescription image not found');
+  return appointment.prescriptionDetails.image;
 };
 
 // Nurses may act on behalf of their assigned patient for every booking step,
@@ -55,6 +67,7 @@ export const createAppointment = async ({ uhid, purpose, symptoms }, actor) => {
     existing.symptomsEnteredBy = actor.role;
     existing.matchedDepartment = match?.department._id || null;
     existing.matchedDoctors = match?.doctors.map((d) => d._id) || [];
+    existing.recommendedDoctor = match?.recommendedDoctor?._id || null;
     await existing.save();
     return getAppointmentOr404(existing._id);
   }
@@ -67,6 +80,7 @@ export const createAppointment = async ({ uhid, purpose, symptoms }, actor) => {
     bookedBy: actor.role,
     matchedDepartment: match?.department._id || null,
     matchedDoctors: match?.doctors.map((d) => d._id) || [],
+    recommendedDoctor: match?.recommendedDoctor?._id || null,
     status: 'pending_doctor',
   });
 
@@ -146,25 +160,57 @@ export const payForAppointment = async (appointmentId, { paymentMethod, transact
 };
 
 export const getMyAppointments = (patientId) =>
-  Appointment.find({ patientId }).populate(POPULATE_FIELDS).sort({ createdAt: -1 });
+  Appointment.find({ patientId })
+    .select('-prescriptionDetails.image.data')
+    .populate(POPULATE_FIELDS)
+    .sort({ createdAt: -1 });
 
 export const getAppointmentsForUhid = async (uhid, actor) => {
   const patient = await Patient.findOne({ uhid });
   if (!patient) throw new ApiError(404, 'Patient not found');
   if (actor.role !== 'admin') assertCanActOnPatient(patient, actor);
-  return Appointment.find({ patientId: patient._id }).populate(POPULATE_FIELDS).sort({ createdAt: -1 });
+  return Appointment.find({ patientId: patient._id })
+    .select('-prescriptionDetails.image.data')
+    .populate(POPULATE_FIELDS)
+    .sort({ createdAt: -1 });
 };
 
 export const getDoctorAppointments = (doctorId) =>
-  Appointment.find({ selectedDoctor: doctorId }).populate(POPULATE_FIELDS).sort({ 'slot.date': 1 });
+  Appointment.find({ selectedDoctor: doctorId })
+    .select('-prescriptionDetails.image.data')
+    .populate(POPULATE_FIELDS)
+    .sort({ 'slot.date': 1 });
 
-export const recordConsultationNotes = async (appointmentId, { rawImageUrl }, doctorId) => {
-  const appointment = await getAppointmentOr404(appointmentId);
+const assertAssignedDoctor = (appointment, doctorId) => {
   if (String(appointment.selectedDoctor._id) !== String(doctorId)) {
     throw new ApiError(403, 'You are not the doctor assigned to this appointment');
   }
+};
+
+// Runs OCR on a photo of the doctor's handwritten prescription so they can
+// review/correct the recognized text before it's saved with the consultation.
+export const recognizePrescription = async (appointmentId, { imageBase64 }, doctorId) => {
+  const appointment = await getAppointmentOr404(appointmentId);
+  assertAssignedDoctor(appointment, doctorId);
+
+  if (!imageBase64) throw new ApiError(400, 'A prescription image is required');
+
+  const recognizedText = await recognizeHandwriting(imageBase64);
+  return { recognizedText };
+};
+
+export const recordConsultationNotes = async (appointmentId, { rawImageUrl, prescriptionImageBase64, prescriptionText }, doctorId) => {
+  const appointment = await getAppointmentOr404(appointmentId);
+  assertAssignedDoctor(appointment, doctorId);
 
   appointment.consultationNotes = { rawImageUrl, recordedAt: new Date() };
+  if (prescriptionImageBase64) {
+    appointment.prescriptionDetails = {
+      image: { data: Buffer.from(prescriptionImageBase64, 'base64'), contentType: 'image/jpeg' },
+      recognizedText: prescriptionText || '',
+      recordedAt: new Date(),
+    };
+  }
   appointment.status = 'completed';
   await appointment.save();
 

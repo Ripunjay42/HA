@@ -38,6 +38,14 @@
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow HAS to access your photos to attach a prescription image.",
+          "cameraPermission": "Allow HAS to access your camera to photograph a handwritten prescription.",
+          "microphonePermission": false
+        }
       ]
     ]
   }

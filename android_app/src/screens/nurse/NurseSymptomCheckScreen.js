@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../../components/ScreenHeader';
 import Input from '../../components/Input';
 import GradientButton from '../../components/GradientButton';
+import AiMatchingOverlay from '../../components/AiMatchingOverlay';
 import api from '../../utils/apiClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
@@ -35,6 +36,7 @@ export default function NurseSymptomCheckScreen({ navigation, route }) {
           departmentId: appointment.matchedDepartment._id,
           departmentName: appointment.matchedDepartment.name,
           matched: true,
+          recommendedDoctorId: appointment.recommendedDoctor?._id || null,
         });
       } else {
         navigation.navigate('NurseDepartments', { mrNo, appointmentId: appointment._id });
@@ -81,6 +83,7 @@ export default function NurseSymptomCheckScreen({ navigation, route }) {
 
         <GradientButton title="Find a Doctor" onPress={handleContinue} loading={loading} style={{ marginBottom: 32 }} />
       </KeyboardAwareScrollView>
+      <AiMatchingOverlay visible={loading} />
     </SafeAreaView>
   );
 }

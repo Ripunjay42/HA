@@ -16,6 +16,7 @@ const appointmentSchema = new Schema({
   },
   matchedDepartment: { type: Schema.Types.ObjectId, ref: 'Department' },
   matchedDoctors: [{ type: Schema.Types.ObjectId, ref: 'Doctor' }],
+  recommendedDoctor: { type: Schema.Types.ObjectId, ref: 'Doctor' },
   selectedDoctor: { type: Schema.Types.ObjectId, ref: 'Doctor' },
   slot: {
     date: Date,
@@ -33,6 +34,11 @@ const appointmentSchema = new Schema({
   paymentId: { type: Schema.Types.ObjectId, ref: 'Payment' },
   consultationNotes: {
     rawImageUrl: String,
+    recordedAt: Date,
+  },
+  prescriptionDetails: {
+    image: { data: Buffer, contentType: String },
+    recognizedText: String,
     recordedAt: Date,
   },
 }, { timestamps: true });

@@ -1,12 +1,14 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../../components/ScreenHeader';
 import Card from '../../components/Card';
+import PrescriptionImageViewer from '../../components/PrescriptionImageViewer';
 import api from '../../utils/apiClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { API_BASE_URL } from '../../constants/config';
 
 const Row = ({ icon, label, value, colors }) => {
   if (!value) return null;
@@ -28,6 +30,7 @@ export default function PatientDetailScreen({ navigation, route }) {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [viewingPrescriptionId, setViewingPrescriptionId] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -204,6 +207,25 @@ export default function PatientDetailScreen({ navigation, route }) {
                         value={appt.consultationNotes?.rawImageUrl}
                         colors={colors}
                       />
+                      {appt.prescriptionDetails?.recordedAt && (
+                        <View className="mt-2">
+                          <Row
+                            icon="medkit-outline"
+                            label="Prescription Details"
+                            value={appt.prescriptionDetails.recognizedText}
+                            colors={colors}
+                          />
+                          <Pressable
+                            onPress={() => setViewingPrescriptionId(appt._id)}
+                            className="mt-1 flex-row items-center self-start rounded-full bg-brand-teal/10 px-3 py-1.5"
+                          >
+                            <Ionicons name="image-outline" size={14} color={colors.teal} />
+                            <Text className="ml-1.5 text-xs font-semibold text-brand-teal">
+                              View Prescription Image
+                            </Text>
+                          </Pressable>
+                        </View>
+                      )}
                     </>
                   ) : (
                     <View className="mt-1 flex-row items-center">
@@ -217,6 +239,13 @@ export default function PatientDetailScreen({ navigation, route }) {
           </Card>
         )}
       </ScrollView>
+
+      {viewingPrescriptionId && (
+        <PrescriptionImageViewer
+          url={`${API_BASE_URL}/appointments/${viewingPrescriptionId}/prescription/image`}
+          onClose={() => setViewingPrescriptionId(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
