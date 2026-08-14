@@ -30,12 +30,10 @@ export default function SymptomCheckScreen({ navigation }) {
         symptoms: symptomList,
       });
 
-      if (appointment.matchedDepartment) {
-        navigation.navigate('DoctorList', {
+      if (appointment.matchedDoctors?.length > 0) {
+        navigation.navigate('MatchedDoctors', {
           appointmentId: appointment._id,
-          departmentId: appointment.matchedDepartment._id,
-          departmentName: appointment.matchedDepartment.name,
-          matched: true,
+          doctors: appointment.matchedDoctors,
           recommendedDoctorId: appointment.recommendedDoctor?._id || null,
         });
       } else {

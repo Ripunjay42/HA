@@ -25,12 +25,11 @@ export default function AppointmentsScreen({ navigation }) {
   // exactly where they left off, instead of only being able to view it.
   const resumeAppointment = (appointment) => {
     if (appointment.status === 'pending_doctor') {
-      if (appointment.matchedDepartment) {
-        navigation.navigate('DoctorList', {
-          departmentId: appointment.matchedDepartment._id,
-          departmentName: appointment.matchedDepartment.name,
+      if (appointment.matchedDoctors?.length > 0) {
+        navigation.navigate('MatchedDoctors', {
           appointmentId: appointment._id,
-          matched: true,
+          doctors: appointment.matchedDoctors,
+          recommendedDoctorId: appointment.recommendedDoctor?._id || null,
         });
       } else {
         navigation.navigate('Departments', { appointmentId: appointment._id });

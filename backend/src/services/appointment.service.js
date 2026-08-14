@@ -2,7 +2,7 @@ import Appointment from '../models/appointment.model.js';
 import Doctor from '../models/doctor.model.js';
 import Payment from '../models/payment.model.js';
 import Patient from '../models/patient.model.js';
-import { matchDepartmentBySymptoms } from '../utils/matchDepartment.js';
+import { matchDoctorsBySymptoms } from '../utils/matchDepartment.js';
 import { recognizeHandwriting } from '../utils/nimOcrClient.js';
 import ApiError from '../utils/ApiError.js';
 
@@ -54,7 +54,13 @@ export const createAppointment = async ({ uhid, purpose, symptoms }, actor) => {
     throw new ApiError(400, 'Your token has expired. Please visit the reception to get a new token before booking.');
   }
 
-  const match = await matchDepartmentBySymptoms(symptoms, purpose);
+  const match = await matchDoctorsBySymptoms(symptoms, purpose);
+  // matchedDepartment stays a best-effort single value (the top-ranked
+  // doctor's department) for screens that only display one department name;
+  // matchedDoctors carries the full ranked list, which can span departments.
+  const matchedDepartmentId = match?.recommendedDoctor?.departmentId?._id || null;
+  const matchedDoctorIds = match?.doctors.map((d) => d._id) || [];
+  const recommendedDoctorId = match?.recommendedDoctor?._id || null;
 
   const existing = await Appointment.findOne({
     patientId: patient._id,
@@ -65,9 +71,9 @@ export const createAppointment = async ({ uhid, purpose, symptoms }, actor) => {
     existing.purpose = purpose;
     existing.symptoms = symptoms;
     existing.symptomsEnteredBy = actor.role;
-    existing.matchedDepartment = match?.department._id || null;
-    existing.matchedDoctors = match?.doctors.map((d) => d._id) || [];
-    existing.recommendedDoctor = match?.recommendedDoctor?._id || null;
+    existing.matchedDepartment = matchedDepartmentId;
+    existing.matchedDoctors = matchedDoctorIds;
+    existing.recommendedDoctor = recommendedDoctorId;
     await existing.save();
     return getAppointmentOr404(existing._id);
   }
@@ -78,9 +84,9 @@ export const createAppointment = async ({ uhid, purpose, symptoms }, actor) => {
     symptoms,
     symptomsEnteredBy: actor.role,
     bookedBy: actor.role,
-    matchedDepartment: match?.department._id || null,
-    matchedDoctors: match?.doctors.map((d) => d._id) || [],
-    recommendedDoctor: match?.recommendedDoctor?._id || null,
+    matchedDepartment: matchedDepartmentId,
+    matchedDoctors: matchedDoctorIds,
+    recommendedDoctor: recommendedDoctorId,
     status: 'pending_doctor',
   });
 

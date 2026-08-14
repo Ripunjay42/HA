@@ -4,6 +4,7 @@ import PatientVitalsScreen from '../screens/nurse/PatientVitalsScreen';
 import NurseSymptomCheckScreen from '../screens/nurse/NurseSymptomCheckScreen';
 import NurseDepartmentsScreen from '../screens/nurse/NurseDepartmentsScreen';
 import NurseDoctorListScreen from '../screens/nurse/NurseDoctorListScreen';
+import NurseMatchedDoctorsScreen from '../screens/nurse/NurseMatchedDoctorsScreen';
 import NurseBookSlotScreen from '../screens/nurse/NurseBookSlotScreen';
 import NursePaymentScreen from '../screens/nurse/NursePaymentScreen';
 import NurseConfirmationScreen from '../screens/nurse/NurseConfirmationScreen';
@@ -19,6 +20,7 @@ export default function NurseNavigator() {
       <Stack.Screen name="NurseSymptomCheck" component={NurseSymptomCheckScreen} />
       <Stack.Screen name="NurseDepartments" component={NurseDepartmentsScreen} />
       <Stack.Screen name="NurseDoctorList" component={NurseDoctorListScreen} />
+      <Stack.Screen name="NurseMatchedDoctors" component={NurseMatchedDoctorsScreen} />
       <Stack.Screen name="NurseBookSlot" component={NurseBookSlotScreen} />
       <Stack.Screen name="NursePayment" component={NursePaymentScreen} />
       <Stack.Screen name="NurseConfirmation" component={NurseConfirmationScreen} />

@@ -54,12 +54,11 @@ export default function PatientHomeScreen({ navigation }) {
   // exactly where they left off, instead of only landing on the list.
   const resumeAppointment = (appointment) => {
     if (appointment.status === 'pending_doctor') {
-      if (appointment.matchedDepartment) {
-        navigation.navigate('DoctorList', {
-          departmentId: appointment.matchedDepartment._id,
-          departmentName: appointment.matchedDepartment.name,
+      if (appointment.matchedDoctors?.length > 0) {
+        navigation.navigate('MatchedDoctors', {
           appointmentId: appointment._id,
-          matched: true,
+          doctors: appointment.matchedDoctors,
+          recommendedDoctorId: appointment.recommendedDoctor?._id || null,
         });
       } else {
         navigation.navigate('Departments', { appointmentId: appointment._id });
@@ -178,7 +177,7 @@ export default function PatientHomeScreen({ navigation }) {
           ))}
         </View>
 
-        {upcoming && (
+        {upcoming?.selectedDoctor && (
           <View className="mx-5 mt-2">
             <View className="mb-2 flex-row items-center justify-between">
               <Text className="text-base font-bold text-ink">Upcoming Appointment</Text>
@@ -195,9 +194,7 @@ export default function PatientHomeScreen({ navigation }) {
                   <Ionicons name="person" size={22} color={colors.ink} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-bold text-ink">
-                    {upcoming.selectedDoctor ? upcoming.selectedDoctor.name : 'Doctor not selected yet'}
-                  </Text>
+                  <Text className="text-sm font-bold text-ink">{upcoming.selectedDoctor.name}</Text>
                   <Text className="text-xs text-ink-soft">
                     {upcoming.matchedDepartment?.name || 'General'}
                     {upcoming.slot?.startTime ? ` • ${upcoming.slot.startTime}` : ''}

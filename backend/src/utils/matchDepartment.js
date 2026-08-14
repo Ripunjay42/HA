@@ -4,8 +4,9 @@ import { chatComplete } from './nimChatClient.js';
 
 // Keyword scan against symptomKeywords -- used only when the AI matcher is
 // unavailable/unconfigured or returns an unusable answer, so booking never
-// hard-fails on an API hiccup.
-const matchDepartmentByKeywords = (departments, searchText) => {
+// hard-fails on an API hiccup. Falls back to a single department's active
+// doctors, since there's no ranking signal available without the AI.
+const matchByKeywords = async (departments, searchText) => {
   const scored = departments
     .map((dept) => {
       const score = (dept.symptomKeywords || []).filter((keyword) =>
@@ -15,55 +16,25 @@ const matchDepartmentByKeywords = (departments, searchText) => {
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score);
 
-  return scored[0]?.dept || null;
+  const bestDepartment = scored[0]?.dept;
+  if (!bestDepartment) return null;
+
+  const doctors = await Doctor.find({ departmentId: bestDepartment._id, status: 'active' })
+    .populate('departmentId', 'name');
+  return doctors;
 };
 
-// Asks the NIM-hosted LLM to pick the single best-matching department for
-// the patient's purpose/symptoms, given the real department list -- this
-// lets non-keyword phrasing (e.g. "my knee hurts when I climb stairs") match
-// Orthopedics even without a literal "knee pain" keyword on file.
-const matchDepartmentByAi = async (departments, purpose, symptoms) => {
-  const catalog = departments.map((d) => ({
-    id: String(d._id),
-    name: d.name,
-    description: d.description || '',
-    knownSymptoms: d.symptomKeywords || [],
-  }));
-
-  const reply = await chatComplete([
-    {
-      role: 'system',
-      content: 'You are a hospital triage assistant. Given a patient\'s purpose of visit and symptoms, '
-        + 'pick the single most appropriate department from the provided list, using each department\'s '
-        + '"knownSymptoms" as the strongest signal for what it treats. Match based on the actual body part or '
-        + 'system affected -- e.g. skin, hair, nails, or rashes belong to a dermatology-type department, NOT an '
-        + 'ear/nose/throat department, even if the word "head" or "hair" appears. Only pick an ENT-type '
-        + 'department for symptoms actually about ears, nose, throat, sinus, or hearing. '
-        + 'Reply with ONLY the department "id" value from the list, and nothing else. '
-        + 'If none of the departments are a reasonable match, reply with exactly: none',
-    },
-    {
-      role: 'user',
-      content: `Departments:\n${JSON.stringify(catalog)}\n\nPurpose of visit: ${purpose || '(none given)'}\nSymptoms: ${symptoms.join(', ') || '(none given)'}`,
-    },
-  ], { maxTokens: 40 });
-
-  if (!reply) return null;
-  const id = reply.trim().split(/\s+/)[0].replace(/["'.]/g, '');
-  if (id === 'none') return null;
-  return departments.find((d) => String(d._id) === id) || null;
-};
-
-// Asks the LLM to pick which of the department's active doctors best fits
-// the patient's symptoms, based on specialization -- e.g. preferring a
-// sports-medicine-leaning orthopedist for a running injury. Returns null
-// (no recommendation, just an unordered list) if nothing stands out.
-const recommendDoctorByAi = async (doctors, purpose, symptoms) => {
-  if (doctors.length <= 1) return doctors[0] || null;
-
+// Asks the NIM-hosted LLM to rank the doctors (across every department, not
+// just one) who are relevant to the patient's purpose/symptoms -- this lets
+// a patient with overlapping symptoms (e.g. joint pain that could be
+// Orthopedics or General Medicine) see relevant doctors from every
+// applicable department at once, rather than being funneled into a single
+// department guess.
+const matchDoctorsByAi = async (doctors, purpose, symptoms) => {
   const catalog = doctors.map((d) => ({
     id: String(d._id),
     name: d.name,
+    department: d.departmentId?.name || '',
     specialization: d.specialization || '',
     experienceYears: d.experienceYears || 0,
   }));
@@ -71,53 +42,64 @@ const recommendDoctorByAi = async (doctors, purpose, symptoms) => {
   const reply = await chatComplete([
     {
       role: 'system',
-      content: 'You are a hospital triage assistant. Given a patient\'s purpose of visit and symptoms, and a list '
-        + 'of doctors (with their specialization) already in the correct department, pick the single doctor whose '
-        + 'specialization best fits this patient. Reply with ONLY the doctor "id" value, and nothing else. '
-        + 'If no doctor stands out as a better fit than the others, reply with exactly: none',
+      content: 'You are an experienced hospital triage assistant. Given a patient\'s purpose of visit and '
+        + 'symptoms, and a list of available doctors (with their department and specialization), use your '
+        + 'medical knowledge to decide which doctors would genuinely be relevant for this patient -- the same '
+        + 'way a real triage nurse would. A symptom can be relevant to doctors in more than one department '
+        + '(e.g. joint pain could reasonably go to Orthopedics or General Medicine), so include every doctor '
+        + 'who is a real, medically sound fit, but do NOT include a doctor just because their department is '
+        + 'loosely related or their symptoms overlap only superficially. Reply with ONLY a JSON array of doctor '
+        + '"id" values, ordered from most to least relevant. Reply with an empty array [] if none are a '
+        + 'reasonable match. Reply with ONLY the JSON array, nothing else.',
     },
     {
       role: 'user',
       content: `Doctors:\n${JSON.stringify(catalog)}\n\nPurpose of visit: ${purpose || '(none given)'}\nSymptoms: ${symptoms.join(', ') || '(none given)'}`,
     },
-  ], { maxTokens: 40 });
+  ], { maxTokens: 200 });
 
   if (!reply) return null;
-  const id = reply.trim().split(/\s+/)[0].replace(/["'.]/g, '');
-  if (id === 'none') return null;
-  return doctors.find((d) => String(d._id) === id) || null;
+
+  let ids;
+  try {
+    ids = JSON.parse(reply.trim().match(/\[[\s\S]*\]/)?.[0] || '[]');
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(ids) || ids.length === 0) return null;
+
+  const byId = new Map(doctors.map((d) => [String(d._id), d]));
+  const ranked = ids.map((id) => byId.get(String(id))).filter(Boolean);
+  return ranked.length > 0 ? ranked : null;
 };
 
-// Matches the submitted symptoms/purpose text to a department and, within
-// it, an optionally-recommended doctor -- preferring an AI-driven match and
-// falling back to keyword scoring for the department when the AI is
+// Matches the submitted symptoms/purpose text to a ranked list of relevant
+// doctors spanning any number of departments -- preferring an AI-driven
+// match and falling back to keyword-based department scoring when the AI is
 // unavailable/unconfigured or returns an unusable answer. Returns null if
 // nothing matches so the caller can fall back to showing all departments,
 // per the spec's fallback rule.
-export const matchDepartmentBySymptoms = async (symptoms = [], purpose = '') => {
-  const departments = await Department.find();
-  if (departments.length === 0) return null;
+export const matchDoctorsBySymptoms = async (symptoms = [], purpose = '') => {
+  const [departments, allDoctors] = await Promise.all([
+    Department.find(),
+    Doctor.find({ status: 'active' }).populate('departmentId', 'name'),
+  ]);
+  if (allDoctors.length === 0) return null;
 
   const searchText = [...symptoms, purpose].join(' ').toLowerCase();
 
-  let bestDepartment = await matchDepartmentByAi(departments, purpose, symptoms).catch(() => null);
-  if (!bestDepartment) {
-    bestDepartment = matchDepartmentByKeywords(departments, searchText);
-  }
-  if (!bestDepartment) return null;
+  const aiRanked = await matchDoctorsByAi(allDoctors, purpose, symptoms).catch(() => null);
+  const doctors = aiRanked || await matchByKeywords(departments, searchText);
+  if (!doctors || doctors.length === 0) return null;
 
-  const matchedDoctors = await Doctor.find({
-    departmentId: bestDepartment._id,
-    status: 'active',
+  const departmentsById = new Map();
+  doctors.forEach((d) => {
+    if (d.departmentId) departmentsById.set(String(d.departmentId._id), d.departmentId);
   });
 
-  const recommendedDoctor = await recommendDoctorByAi(matchedDoctors, purpose, symptoms).catch(() => null);
-
-  // Surface the recommendation first in the list so any "matched doctors"
-  // UI naturally leads with it, in addition to the explicit field.
-  const orderedDoctors = recommendedDoctor
-    ? [recommendedDoctor, ...matchedDoctors.filter((d) => String(d._id) !== String(recommendedDoctor._id))]
-    : matchedDoctors;
-
-  return { department: bestDepartment, doctors: orderedDoctors, recommendedDoctor };
+  return {
+    doctors,
+    recommendedDoctor: doctors[0],
+    departments: [...departmentsById.values()],
+  };
 };

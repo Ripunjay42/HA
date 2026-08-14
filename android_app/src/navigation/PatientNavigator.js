@@ -3,6 +3,7 @@ import PatientTabs from './PatientTabs';
 import DepartmentsScreen from '../screens/patient/DepartmentsScreen';
 import SymptomCheckScreen from '../screens/patient/SymptomCheckScreen';
 import DoctorListScreen from '../screens/patient/DoctorListScreen';
+import MatchedDoctorsScreen from '../screens/patient/MatchedDoctorsScreen';
 import BookSlotScreen from '../screens/patient/BookSlotScreen';
 import PaymentScreen from '../screens/patient/PaymentScreen';
 import ConfirmationScreen from '../screens/patient/ConfirmationScreen';
@@ -17,6 +18,7 @@ export default function PatientNavigator() {
       <Stack.Screen name="Departments" component={DepartmentsScreen} />
       <Stack.Screen name="SymptomCheck" component={SymptomCheckScreen} />
       <Stack.Screen name="DoctorList" component={DoctorListScreen} />
+      <Stack.Screen name="MatchedDoctors" component={MatchedDoctorsScreen} />
       <Stack.Screen name="BookSlot" component={BookSlotScreen} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
       <Stack.Screen name="Confirmation" component={ConfirmationScreen} />
